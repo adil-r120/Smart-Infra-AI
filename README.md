@@ -81,4 +81,4 @@ npm run dev
 
 ---
 
-*Built with ❤️ for Advanced Infrastructure Monitoring.*
+*Built with Advanced Infrastructure Monitoring.*
