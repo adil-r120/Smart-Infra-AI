@@ -17,7 +17,7 @@ import {
     Eye, EyeOff, Activity, Download, Maximize, Minimize,
     Search, Plus, Minus, Route, ShieldAlert,
     Copy, Check, Sparkles, Navigation, Crosshair,
-    ExternalLink, X, Car, User, Compass, Wrench,
+    ExternalLink, X, Car, User, Wrench,
     ChevronRight, ChevronLeft, ArrowUpRight, Flame,
     SlidersHorizontal, CheckCircle2, Clock
 } from "lucide-react";
@@ -207,26 +207,15 @@ function FlyToUser({ loc }: { loc: UserLocation | null }) {
 // ── Google Maps Navigation Controls ───────────────────────────────────────────
 function GoogleNavControls({
     userLoc,
-    onLocateMe,
-    onStreetView
+    onLocateMe
 }: {
     userLoc: UserLocation | null;
     onLocateMe: () => void;
-    onStreetView: () => void;
 }) {
     const map = useMap();
 
     return (
         <div className="gmap-floating-controls">
-            <button
-                type="button"
-                className="gmap-control-btn gmap-pegman-btn"
-                onClick={onStreetView}
-                title="Open Street View (Google Maps)"
-            >
-                <Compass size={18} className="text-amber-500" />
-            </button>
-
             <button
                 type="button"
                 className="gmap-control-btn gmap-locate-btn"
@@ -929,11 +918,6 @@ export default function MonitoringMap() {
                             userLoc={userLoc}
                             onLocateMe={() => {
                                 if (userLoc) setTargetCamera([userLoc.lat, userLoc.lng]);
-                            }}
-                            onStreetView={() => {
-                                const lat = targetCamera ? targetCamera[0] : mapCenter[0];
-                                const lng = targetCamera ? targetCamera[1] : mapCenter[1];
-                                window.open(`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`, "_blank");
                             }}
                         />
 
