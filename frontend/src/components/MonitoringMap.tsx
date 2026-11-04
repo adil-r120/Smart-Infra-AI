@@ -882,6 +882,7 @@ export default function MonitoringMap() {
                         maxZoom={22}
                         scrollWheelZoom={true}
                         zoomControl={false}
+                        attributionControl={false}
                         style={{ height: "100%", width: "100%" }}
                     >
                         {/* Base Google Maps Tiles */}
@@ -957,13 +958,6 @@ export default function MonitoringMap() {
                             </>
                         )}
                     </MapContainer>
-                </div>
-
-                {/* Attribution */}
-                <div className="gmap-bottom-attribution">
-                    <span className="gmap-logo-text">Google</span>
-                    <span className="gmap-attr-divider">·</span>
-                    <span>Map data ©{new Date().getFullYear()} Google</span>
                 </div>
             </div>
 
@@ -1634,13 +1628,14 @@ export default function MonitoringMap() {
                 .gmap-iw-btn.primary { background: #1a73e8; color: #ffffff; }
                 .gmap-iw-btn.secondary { background: #f1f3f4; color: #1a73e8; }
 
-                /* ── Bottom Right Google Attribution ── */
+                /* ── Hidden Attribution Overlays ── */
+                .leaflet-control-attribution,
                 .gmap-bottom-attribution {
-                    position: absolute; bottom: 4px; right: 80px; z-index: 999;
-                    background: rgba(255, 255, 255, 0.75); padding: 2px 6px;
-                    border-radius: 3px; font-size: 0.62rem; color: #5f6368; display: flex; gap: 4px;
+                    display: none !important;
+                    opacity: 0 !important;
+                    visibility: hidden !important;
+                    pointer-events: none !important;
                 }
-                .gmap-logo-text { font-weight: 900; color: #4285f4; }
 
                 /* ══════════════════════════════════════════════════════════════
                    RIGHT SIDEBAR: HAZARD FEED & TRIAGE LIST
