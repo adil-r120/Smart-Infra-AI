@@ -59,8 +59,7 @@
   flex-direction: column;
 }
 
-/* ── Top Floating Quick Access Hub (Direct Access) ── */
-/* ── Top Floating Quick Access Hub (Direct Access) ── */
+/* ── Top Floating Quick Access Hub (Refined Style with Original Cyber Colors) ── */
 .home-quick-access-bar {
   width: 100%;
   padding: 20px 24px 0 24px;
@@ -74,13 +73,13 @@
 .home-quick-access-inner {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: linear-gradient(135deg, rgba(13, 20, 38, 0.82) 0%, rgba(6, 11, 24, 0.90) 100%);
   backdrop-filter: blur(28px) saturate(210%);
   -webkit-backdrop-filter: blur(28px) saturate(210%);
   border: 1px solid rgba(56, 189, 248, 0.28);
   border-radius: 9999px;
-  padding: 6px 12px 6px 8px;
+  padding: 6px 10px 6px 6px;
   box-shadow: 
     0 20px 48px -8px rgba(0, 0, 0, 0.75),
     0 0 30px rgba(56, 189, 248, 0.14),
@@ -88,7 +87,7 @@
   max-width: 96vw;
   overflow-x: auto;
   scrollbar-width: none;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home-quick-access-inner::-webkit-scrollbar {
@@ -103,18 +102,26 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
-/* Brand Capsule */
+/* Brand Radar Orb */
 .home-quick-brand-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 9999px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.16) 0%, rgba(30, 58, 138, 0.22) 100%);
   border: 1px solid rgba(56, 189, 248, 0.35);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 14px rgba(56, 189, 248, 0.15);
   flex-shrink: 0;
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+.home-quick-brand-pill:hover {
+  transform: scale(1.05);
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 20px rgba(56, 189, 248, 0.35);
 }
 
 .quick-radar-wrapper {
@@ -150,15 +157,13 @@
   100% { transform: scale(1.8); opacity: 0; }
 }
 
+@keyframes beacon-blink {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.85); opacity: 0.5; }
+}
+
 .quick-nav-pill-title {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  background: linear-gradient(90deg, #e0f2fe 0%, #38bdf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-transform: uppercase;
-  white-space: nowrap;
+  display: none !important;
 }
 
 .quick-dock-separator {
@@ -168,7 +173,7 @@
 .home-quick-nav-links {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
@@ -181,12 +186,12 @@
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #f8fafc !important;
+  color: #ffffff !important;
   font-size: 0.82rem;
   font-weight: 650;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateZ(0);
 }
 
@@ -200,7 +205,7 @@
   transform: translateY(0) scale(0.98);
 }
 
-/* Glowing Icon Boxes */
+/* Glowing Icon Badges */
 .quick-btn-icon-wrap {
   width: 26px;
   height: 26px;
@@ -217,59 +222,33 @@
 }
 
 .home-quick-nav-btn:hover .quick-btn-icon {
-  transform: scale(1.18);
+  transform: scale(1.15);
 }
 
 .quick-btn-label {
-  color: #f1f5f9;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   letter-spacing: -0.01em;
-  font-weight: 650;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   transition: color 0.2s ease;
 }
 
-/* Badges */
-.quick-btn-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 9999px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  transition: all 0.25s ease;
-}
+/* ── EXACT ORIGINAL ACCENT COLORS ── */
 
-.live-dot-pulse {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
-  animation: beacon-blink 1.2s infinite ease-in-out;
-}
-
-/* Specific Accent Themes */
 /* Emerald - Live Feed */
 .icon-accent-emerald {
   background: rgba(16, 185, 129, 0.16);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.32);
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
 }
-.badge-accent-emerald {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
-}
 .btn-accent-emerald:hover {
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(16, 185, 129, 0.25);
 }
 .btn-accent-emerald:hover .quick-btn-label {
-  color: #6ee7b7;
+  color: #6ee7b7 !important;
 }
 
 /* Cyan - AI Scanner / Dashboard */
@@ -279,39 +258,27 @@
   border: 1px solid rgba(56, 189, 248, 0.32);
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
 }
-.badge-accent-cyan {
-  background: rgba(56, 189, 248, 0.14);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
-}
 .btn-accent-cyan:hover {
   border-color: rgba(56, 189, 248, 0.55);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(56, 189, 248, 0.28);
 }
 .btn-accent-cyan:hover .quick-btn-label {
-  color: #7dd3fc;
+  color: #7dd3fc !important;
 }
 
-/* Blue - GPS Map */
+/* Blue - My Reports / GPS Map */
 .icon-accent-blue {
   background: rgba(96, 165, 250, 0.16);
   color: #60a5fa;
   border: 1px solid rgba(96, 165, 250, 0.32);
   box-shadow: 0 0 10px rgba(96, 165, 250, 0.2);
 }
-.badge-accent-blue {
-  background: rgba(96, 165, 250, 0.14);
-  color: #93c5fd;
-  border: 1px solid rgba(96, 165, 250, 0.35);
-  box-shadow: 0 0 10px rgba(96, 165, 250, 0.15);
-}
 .btn-accent-blue:hover {
   border-color: rgba(96, 165, 250, 0.55);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(96, 165, 250, 0.25);
 }
 .btn-accent-blue:hover .quick-btn-label {
-  color: #bfdbfe;
+  color: #bfdbfe !important;
 }
 
 /* Amber - Report Defect */
@@ -321,18 +288,12 @@
   border: 1px solid rgba(245, 158, 11, 0.32);
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
 }
-.badge-accent-amber {
-  background: rgba(245, 158, 11, 0.14);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
-}
 .btn-accent-amber:hover {
   border-color: rgba(245, 158, 11, 0.55);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(245, 158, 11, 0.25);
 }
 .btn-accent-amber:hover .quick-btn-label {
-  color: #fde68a;
+  color: #fde68a !important;
 }
 
 /* Purple - Settings / Config */
@@ -342,18 +303,12 @@
   border: 1px solid rgba(168, 85, 247, 0.32);
   box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
 }
-.badge-accent-purple {
-  background: rgba(168, 85, 247, 0.14);
-  color: #d8b4fe;
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
-}
 .btn-accent-purple:hover {
   border-color: rgba(168, 85, 247, 0.55);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(168, 85, 247, 0.25);
 }
 .btn-accent-purple:hover .quick-btn-label {
-  color: #e9d5ff;
+  color: #e9d5ff !important;
 }
 
 /* Rose - Admin Console */
@@ -363,47 +318,32 @@
   border: 1px solid rgba(244, 63, 94, 0.32);
   box-shadow: 0 0 10px rgba(244, 63, 94, 0.2);
 }
-.badge-accent-rose {
-  background: rgba(244, 63, 94, 0.14);
-  color: #fda4af;
-  border: 1px solid rgba(244, 63, 94, 0.35);
-  box-shadow: 0 0 10px rgba(244, 63, 94, 0.15);
-}
 .btn-accent-rose:hover {
   border-color: rgba(244, 63, 94, 0.55);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(244, 63, 94, 0.25);
 }
 .btn-accent-rose:hover .quick-btn-label {
-  color: #fecdd3;
+  color: #fecdd3 !important;
 }
 
-/* Indigo - History */
+/* Indigo - Detection Log */
 .icon-accent-indigo {
   background: rgba(99, 102, 241, 0.16);
   color: #818cf8;
   border: 1px solid rgba(99, 102, 241, 0.32);
   box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
 }
-.badge-accent-indigo {
-  background: rgba(99, 102, 241, 0.14);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.35);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
-}
 .btn-accent-indigo:hover {
   border-color: rgba(99, 102, 241, 0.55);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(99, 102, 241, 0.25);
 }
 .btn-accent-indigo:hover .quick-btn-label {
-  color: #c7d2fe;
+  color: #c7d2fe !important;
 }
 
 @media (max-width: 768px) {
   .home-quick-access-bar {
     padding: 12px 14px 0 14px;
-  }
-  .quick-btn-badge {
-    display: none;
   }
   .home-quick-nav-btn {
     padding: 5px 10px;
@@ -1853,6 +1793,44 @@
 .dark-theme .editorial-home-container .quick-btn-label {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.editorial-home-container .btn-accent-emerald:hover .quick-btn-label,
+.light-theme .editorial-home-container .btn-accent-emerald:hover .quick-btn-label {
+  color: #6ee7b7 !important;
+  -webkit-text-fill-color: #6ee7b7 !important;
+}
+.editorial-home-container .btn-accent-cyan:hover .quick-btn-label,
+.light-theme .editorial-home-container .btn-accent-cyan:hover .quick-btn-label {
+  color: #7dd3fc !important;
+  -webkit-text-fill-color: #7dd3fc !important;
+}
+.editorial-home-container .btn-accent-blue:hover .quick-btn-label,
+.light-theme .editorial-home-container .btn-accent-blue:hover .quick-btn-label {
+  color: #bfdbfe !important;
+  -webkit-text-fill-color: #bfdbfe !important;
+}
+.editorial-home-container .btn-accent-amber:hover .quick-btn-label,
+.light-theme .editorial-home-container .btn-accent-amber:hover .quick-btn-label {
+  color: #fde68a !important;
+  -webkit-text-fill-color: #fde68a !important;
+}
+.editorial-home-container .btn-accent-purple:hover .quick-btn-label,
+.light-theme .editorial-home-container .btn-accent-purple:hover .quick-btn-label {
+  color: #e9d5ff !important;
+  -webkit-text-fill-color: #e9d5ff !important;
+}
+.editorial-home-container .btn-accent-rose:hover .quick-btn-label,
+.light-theme .editorial-home-container .btn-accent-rose:hover .quick-btn-label {
+  color: #fecdd3 !important;
+  -webkit-text-fill-color: #fecdd3 !important;
+}
+.editorial-home-container .btn-accent-indigo:hover .quick-btn-label,
+.light-theme .editorial-home-container .btn-accent-indigo:hover .quick-btn-label {
+  color: #c7d2fe !important;
+  -webkit-text-fill-color: #c7d2fe !important;
 }
 
 /* ── 12. Signature "AI" Gradient in Footer Brand ── */

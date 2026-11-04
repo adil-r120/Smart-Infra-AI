@@ -722,3 +722,184 @@
     color: var(--text-muted);
     line-height: 1.6;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROFILE & AVATAR EDITOR STYLES (INSIDE SETTINGS)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.aiconfig-profile-card {
+    background: var(--bg-surface, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.aiconfig-profile-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+
+.aiconfig-profile-avatar-preview {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 3px solid var(--primary);
+    box-shadow: 0 0 20px var(--primary-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    overflow: visible;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+.aiconfig-profile-avatar-preview:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 28px rgba(56, 189, 248, 0.4);
+}
+
+.aiconfig-profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.aiconfig-profile-avatar-preset {
+    font-size: 2.6rem;
+    line-height: 1;
+    user-select: none;
+}
+
+.aiconfig-profile-avatar-initial {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary);
+    user-select: none;
+}
+
+.aiconfig-profile-avatar-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #0b1120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-card);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease;
+}
+
+.aiconfig-profile-avatar-preview:hover .aiconfig-profile-avatar-badge {
+    transform: scale(1.12);
+}
+
+.aiconfig-profile-avatar-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 220px;
+    flex: 1;
+}
+
+.aiconfig-profile-display-name {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+}
+
+.aiconfig-profile-email-meta {
+    margin: 0;
+    font-size: 0.825rem;
+    color: var(--text-muted);
+}
+
+.aiconfig-profile-role-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 99px;
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    width: fit-content;
+    margin-top: 2px;
+}
+
+.aiconfig-profile-avatar-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.aiconfig-btn-secondary.compact,
+.aiconfig-btn-danger.compact {
+    padding: 7px 14px;
+    font-size: 0.78rem;
+    border-radius: 10px;
+}
+
+.aiconfig-preset-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+}
+
+.aiconfig-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 8px;
+    max-width: 480px;
+    margin-top: 4px;
+}
+
+.aiconfig-preset-chip {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    font-size: 1.45rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.aiconfig-preset-chip:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+    background: var(--primary-glow);
+    box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.aiconfig-preset-chip.active {
+    border-color: var(--primary);
+    background: var(--primary-glow);
+    box-shadow: 0 0 0 2px var(--primary), 0 4px 14px var(--primary-glow);
+    transform: scale(1.06);
+}

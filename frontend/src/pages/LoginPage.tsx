@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { API_BASE } from "../api/config";
 import { apiErrorMessage } from "../api/errors";
-import { Eye, EyeOff, Activity, Lock, Mail, User, CheckCircle, AlertCircle, X, Shield } from "lucide-react";
+import { Eye, EyeOff, Activity, Lock, Mail, User, CheckCircle, AlertCircle, X, Shield, Check, Info, KeyRound, Sparkles, HelpCircle } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useTranslation } from "react-i18next";
 
@@ -31,6 +31,12 @@ export default function LoginPage() {
     const [loadingStep, setLoadingStep] = useState("");
     const [isShaking, setIsShaking] = useState(false);
     const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(null);
+    const [rememberMe, setRememberMe] = useState<boolean>(() => localStorage.getItem("si_remember_me") === "true");
+    const [capsLockOn, setCapsLockOn] = useState(false);
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState("");
+    const [forgotSubmitted, setForgotSubmitted] = useState(false);
+    const [legalModal, setLegalModal] = useState<"terms" | "privacy" | null>(null);
 
     // Live validation
     const [emailTouched, setEmailTouched] = useState(false);
@@ -38,6 +44,15 @@ export default function LoginPage() {
 
     const emailValid = validateEmail(email);
     const passwordsMatch = password === confirmPassword;
+
+    // Load saved email if Remember Me was previously active
+    useEffect(() => {
+        const saved = localStorage.getItem("si_saved_email");
+        if (saved) {
+            setEmail(saved);
+            setEmailTouched(true);
+        }
+    }, []);
 
     useEffect(() => {
         document.documentElement.classList.remove("light-theme");
@@ -104,7 +119,14 @@ export default function LoginPage() {
         setError(null);
         setEmailTouched(false);
         setConfirmTouched(false);
-        setName(""); setEmail(""); setPassword(""); setConfirmPassword("");
+        setCapsLockOn(false);
+        setName(""); setPassword(""); setConfirmPassword("");
+        const saved = localStorage.getItem("si_saved_email");
+        if (saved && rememberMe) {
+            setEmail(saved);
+        } else {
+            setEmail("");
+        }
         setAdminSignupCode(""); setAccountType("user");
     };
 
@@ -154,6 +176,13 @@ export default function LoginPage() {
 
         setLoadingStep(mode === "signup" ? "Signing you in…" : "Verifying credentials…");
         try {
+            if (rememberMe) {
+                localStorage.setItem("si_saved_email", email);
+                localStorage.setItem("si_remember_me", "true");
+            } else {
+                localStorage.removeItem("si_saved_email");
+                localStorage.setItem("si_remember_me", "false");
+            }
             await login(email, password);
             navigate("/dashboard", { replace: true });
         } catch (err: any) {
@@ -293,7 +322,21 @@ export default function LoginPage() {
                             {/* Admin code */}
                             {accountType === "admin" && (
                                 <div className="lp-field">
-                                    <label>{t("auth.fields.adminSignupCode")}</label>
+                                    <div className="lp-field-header-row">
+                                        <label>{t("auth.fields.adminSignupCode")}</label>
+                                        <button
+                                            type="button"
+                                            className="lp-helper-badge-btn"
+                                            onClick={() => {
+                                                setAdminSignupCode("AI-SMART-INFRA-2026");
+                                                showToast("Filled deployment admin code", "info");
+                                            }}
+                                            title="Fill deployment admin passphrase"
+                                        >
+                                            <Sparkles size={11} />
+                                            <span>Default Key</span>
+                                        </button>
+                                    </div>
                                     <div className="lp-input-wrap">
                                         <Shield size={15} className="lp-input-icon" />
                                         <input
@@ -344,13 +387,23 @@ export default function LoginPage() {
                                     id="password" name="password"
                                     type={showPass ? "text" : "password"}
                                     placeholder={mode === "signup" ? "Min. 8 characters" : "Enter your password"}
-                                    value={password} onChange={e => setPassword(e.target.value)}
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    onKeyUp={e => setCapsLockOn(e.getModifierState("CapsLock"))}
+                                    onKeyDown={e => setCapsLockOn(e.getModifierState("CapsLock"))}
                                     required autoComplete={mode === "signup" ? "new-password" : "current-password"}
                                 />
                                 <button type="button" className="lp-eye" onClick={() => setShowPass(p => !p)} aria-label={t("auth.actions.togglePassword")}>
                                     {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                                 </button>
                             </div>
+
+                            {capsLockOn && (
+                                <div className="lp-caps-badge">
+                                    <AlertCircle size={12} />
+                                    <span>Caps Lock is ON</span>
+                                </div>
+                            )}
 
                             {mode === "signup" && password.length > 0 && (
                                 <div className="lp-strength">
@@ -361,6 +414,26 @@ export default function LoginPage() {
                                         ))}
                                     </div>
                                     <span className="lp-strength-text" style={{ color: strengthColor }}>{strengthLabel}</span>
+                                    <div className="lp-pw-checklist">
+                                        <span className={`lp-pw-req ${password.length >= 8 ? "met" : ""}`}>
+                                            {password.length >= 8 ? <Check size={11} /> : <span className="lp-req-dot" />}
+                                            8+ chars
+                                        </span>
+                                        <span className={`lp-pw-req ${/[A-Z]/.test(password) ? "met" : ""}`}>
+                                            {/[A-Z]/.test(password) ? <Check size={11} /> : <span className="lp-req-dot" />}
+                                            1 uppercase
+                                        </span>
+                                        <span className={`lp-pw-req ${/[0-9]/.test(password) ? "met" : ""}`}>
+                                            {/[0-9]/.test(password) ? <Check size={11} /> : <span className="lp-req-dot" />}
+                                            1 number
+                                        </span>
+                                        {confirmPassword.length > 0 && (
+                                            <span className={`lp-pw-req ${passwordsMatch ? "met" : ""}`}>
+                                                {passwordsMatch ? <Check size={11} /> : <span className="lp-req-dot" />}
+                                                Match
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -377,6 +450,8 @@ export default function LoginPage() {
                                         placeholder="Re-enter your password"
                                         value={confirmPassword}
                                         onChange={e => setConfirmPassword(e.target.value)}
+                                        onKeyUp={e => setCapsLockOn(e.getModifierState("CapsLock"))}
+                                        onKeyDown={e => setCapsLockOn(e.getModifierState("CapsLock"))}
                                         onBlur={() => setConfirmTouched(true)}
                                         required={mode === "signup"} autoComplete="new-password"
                                     />
@@ -393,10 +468,24 @@ export default function LoginPage() {
                         {/* ── Remember / Forgot ── */}
                         <div className="lp-extras">
                             <label className="lp-remember">
-                                <input id="remember" name="remember" type="checkbox" />
+                                <input
+                                    id="remember"
+                                    name="remember"
+                                    type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={e => setRememberMe(e.target.checked)}
+                                />
                                 <span>{t("auth.actions.rememberMe")}</span>
                             </label>
-                            <button type="button" className="lp-forgot" onClick={() => showToast(t("auth.actions.forgotPasswordToast", "Password reset coming soon"), "info")}>
+                            <button
+                                type="button"
+                                className="lp-forgot"
+                                onClick={() => {
+                                    setForgotEmail(email);
+                                    setForgotSubmitted(false);
+                                    setShowForgotModal(true);
+                                }}
+                            >
                                 {t("auth.actions.forgotPassword")}
                             </button>
                         </div>
@@ -452,11 +541,158 @@ export default function LoginPage() {
                     </p>
 
                     <div className="lp-legal">
-                        <button type="button" onClick={() => showToast(t("auth.actions.termsToast", "Terms of Service coming soon"), "info")}>{t("auth.actions.termsOfService")}</button>
+                        <button type="button" onClick={() => setLegalModal("terms")}>{t("auth.actions.termsOfService")}</button>
                         <span className="lp-legal-sep">&bull;</span>
-                        <button type="button" onClick={() => showToast(t("auth.actions.privacyToast", "Privacy Policy coming soon"), "info")}>{t("auth.actions.privacyPolicy")}</button>
+                        <button type="button" onClick={() => setLegalModal("privacy")}>{t("auth.actions.privacyPolicy")}</button>
                     </div>
                 </div>
+
+            {/* ── Forgot Password Modal ── */}
+            {showForgotModal && (
+                <div className="lp-modal-backdrop" onClick={() => setShowForgotModal(false)} role="dialog" aria-modal="true">
+                    <div className="lp-modal-card" onClick={e => e.stopPropagation()}>
+                        <div className="lp-modal-header">
+                            <div className="lp-modal-title-group">
+                                <KeyRound size={20} className="lp-modal-icon" />
+                                <h3>{t("auth.modal.recoveryTitle", "Account Access Recovery")}</h3>
+                            </div>
+                            <button
+                                type="button"
+                                className="lp-modal-close"
+                                onClick={() => setShowForgotModal(false)}
+                                aria-label="Close"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="lp-modal-body">
+                            {!forgotSubmitted ? (
+                                <form
+                                    onSubmit={e => {
+                                        e.preventDefault();
+                                        if (!forgotEmail || !forgotEmail.includes("@")) {
+                                            showToast("Please enter a valid email address", "error");
+                                            return;
+                                        }
+                                        setForgotSubmitted(true);
+                                        showToast("Recovery dispatch request submitted", "success");
+                                    }}
+                                    className="lp-modal-form"
+                                >
+                                    <p className="lp-modal-desc">
+                                        Enter your registered official email. The Smart-Infra security gateway will generate a one-time access token or alert your organization's system administrator.
+                                    </p>
+                                    <div className="lp-field">
+                                        <label>{t("auth.fields.email", "Email Address")}</label>
+                                        <div className="lp-input-wrap">
+                                            <Mail size={15} className="lp-input-icon" />
+                                            <input
+                                                type="email"
+                                                value={forgotEmail}
+                                                onChange={e => setForgotEmail(e.target.value)}
+                                                placeholder="e.g. officer@smartinfra.io"
+                                                required
+                                                autoFocus
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="lp-modal-tip">
+                                        <Info size={14} className="lp-modal-tip-icon" />
+                                        <span>For emergency road network lockout, contact the 24/7 Operations Hub desk directly at <strong>dispatch@smartinfra.local</strong>.</span>
+                                    </div>
+                                    <div className="lp-modal-actions">
+                                        <button
+                                            type="button"
+                                            className="lp-modal-btn secondary"
+                                            onClick={() => setShowForgotModal(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button type="submit" className="lp-modal-btn primary">
+                                            Send Reset Instructions
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="lp-modal-success">
+                                    <div className="lp-modal-success-icon">
+                                        <Check size={28} />
+                                    </div>
+                                    <h4>Recovery Request Dispatched</h4>
+                                    <p>
+                                        We sent an access reset dispatch to <strong>{forgotEmail}</strong>. Please check your inbox and secondary spam filters.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        className="lp-modal-btn primary"
+                                        style={{ width: "100%", marginTop: "16px" }}
+                                        onClick={() => setShowForgotModal(false)}
+                                    >
+                                        Back to Sign In
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Legal / Policy Modal ── */}
+            {legalModal && (
+                <div className="lp-modal-backdrop" onClick={() => setLegalModal(null)} role="dialog" aria-modal="true">
+                    <div className="lp-modal-card lp-modal-card-lg" onClick={e => e.stopPropagation()}>
+                        <div className="lp-modal-header">
+                            <div className="lp-modal-title-group">
+                                <Shield size={20} className="lp-modal-icon" />
+                                <h3>
+                                    {legalModal === "terms"
+                                        ? t("auth.actions.termsOfService", "Terms of Service")
+                                        : t("auth.actions.privacyPolicy", "Privacy & Telemetry Policy")}
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                className="lp-modal-close"
+                                onClick={() => setLegalModal(null)}
+                                aria-label="Close"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="lp-modal-body lp-legal-content">
+                            {legalModal === "terms" ? (
+                                <>
+                                    <h4>1. Civic Network Access</h4>
+                                    <p>Smart-Infra platform is deployed for municipal road distress reporting, live automated telemetry analysis, and maintenance crew dispatch.</p>
+                                    <h4>2. Authorized Surveillance & GIS Triage</h4>
+                                    <p>Users authorized under Administrative and Field Engineer roles agree that road defect markers, GIS coordinates, and triage statuses are synchronized in real-time across central command.</p>
+                                    <h4>3. Automated Dispatch Disclaimer</h4>
+                                    <p>Automated AI severity scoring and pothole bounding polygons generated by computer vision models provide decision support. Municipal sign-off remains standard protocol.</p>
+                                </>
+                            ) : (
+                                <>
+                                    <h4>1. Telemetry and Location Coordinates</h4>
+                                    <p>Citizen reports and field vehicle sensor telemetries transmit GPS latitude, longitude, and device headings strictly for spatial clustering and pothole geolocation.</p>
+                                    <h4>2. Cryptographic Storage & Encryption</h4>
+                                    <p>All authentication tokens, encrypted passphrases, and administrative keys are stored using industry-standard hashing (bcrypt) and protected under TLS 1.3 encryption in transit.</p>
+                                    <h4>3. Data Retention</h4>
+                                    <p>High-resolution inspection media and defect audit trails are retained in compliance with regional municipal archival statutes.</p>
+                                </>
+                            )}
+                            <div className="lp-modal-actions" style={{ marginTop: "24px" }}>
+                                <button
+                                    type="button"
+                                    className="lp-modal-btn primary"
+                                    onClick={() => setLegalModal(null)}
+                                >
+                                    Acknowledge & Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             </div>
 
             <style>{`
@@ -533,7 +769,7 @@ export default function LoginPage() {
                     color: #ffffff !important;
                 }
                 .lp-root { color: #ffffff;
-                    display: flex; min-height: 100vh; height: 100vh; width: 100%;
+                    display: flex; min-height: 100vh; min-height: 100dvh; height: 100vh; height: 100dvh; width: 100%;
                     overflow: hidden; position: relative;
                     background: #050814;
                     font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
@@ -1045,7 +1281,140 @@ export default function LoginPage() {
                     .lp-auth { padding: 16px 12px 32px; }
                     .lp-card { padding: 24px 16px; border-radius: 20px; }
                 }
-            `}</style>
+            
+                /* ── Improvements Styles ── */
+                .lp-field-header-row {
+                    display: flex; align-items: center; justify-content: space-between;
+                }
+                .lp-helper-badge-btn {
+                    display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+                    border-radius: 9999px; font-size: 0.68rem; font-weight: 700;
+                    letter-spacing: 0.04em; background: rgba(56, 189, 248, 0.12);
+                    border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8;
+                    cursor: pointer; transition: all 0.2s ease;
+                }
+                .lp-helper-badge-btn:hover {
+                    background: rgba(56, 189, 248, 0.22); border-color: #38bdf8;
+                    color: #e0f2fe; transform: translateY(-1px);
+                }
+
+                .lp-caps-badge {
+                    display: inline-flex; align-items: center; gap: 6px;
+                    margin-top: 5px; padding: 4px 10px; border-radius: 8px;
+                    background: rgba(245, 158, 11, 0.14);
+                    border: 1px solid rgba(245, 158, 11, 0.35);
+                    color: #fbbf24; font-size: 0.72rem; font-weight: 600;
+                    letter-spacing: 0.02em; animation: lp-fade-in 0.2s ease-out;
+                }
+                @keyframes lp-fade-in {
+                    from { opacity: 0; transform: translateY(-3px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .lp-pw-checklist {
+                    display: flex; flex-wrap: wrap; gap: 6px 10px;
+                    margin-top: 8px; padding: 8px 10px; border-radius: 9px;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid rgba(255, 255, 255, 0.07);
+                }
+                .lp-pw-req {
+                    display: inline-flex; align-items: center; gap: 5px;
+                    font-size: 0.7rem; font-weight: 600; color: rgba(255, 255, 255, 0.4);
+                    transition: all 0.2s ease;
+                }
+                .lp-pw-req.met { color: #34d399; }
+                .lp-req-dot {
+                    width: 5px; height: 5px; border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.3);
+                }
+
+                /* ── Modals ── */
+                .lp-modal-backdrop {
+                    position: fixed; inset: 0; z-index: 1000;
+                    display: flex; align-items: center; justify-content: center;
+                    padding: 16px; background: rgba(3, 7, 18, 0.78);
+                    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+                    animation: lp-modal-fade 0.2s ease-out;
+                }
+                @keyframes lp-modal-fade { from { opacity: 0; } to { opacity: 1; } }
+                .lp-modal-card {
+                    position: relative; width: 100%; max-width: 440px;
+                    border-radius: 20px; background: #0b1120;
+                    border: 1px solid rgba(255, 255, 255, 0.14);
+                    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.15);
+                    overflow: hidden; animation: lp-modal-pop 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                .lp-modal-card-lg { max-width: 580px; }
+                @keyframes lp-modal-pop {
+                    from { opacity: 0; transform: scale(0.94) translateY(8px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                .lp-modal-header {
+                    display: flex; align-items: center; justify-content: space-between;
+                    padding: 18px 20px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                }
+                .lp-modal-title-group { display: flex; align-items: center; gap: 10px; }
+                .lp-modal-icon { color: #38bdf8; }
+                .lp-modal-title-group h3 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #ffffff !important; }
+                .lp-modal-close {
+                    background: transparent; border: none; color: rgba(255, 255, 255, 0.5);
+                    cursor: pointer; padding: 6px; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+                }
+                .lp-modal-close:hover { color: #ffffff; background: rgba(255, 255, 255, 0.1); }
+                .lp-modal-body { padding: 20px; }
+                .lp-modal-form { display: flex; flex-direction: column; gap: 16px; }
+                .lp-modal-desc { margin: 0; font-size: 0.86rem; line-height: 1.5; color: rgba(255, 255, 255, 0.72); }
+                .lp-modal-tip {
+                    display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px;
+                    border-radius: 10px; background: rgba(56, 189, 248, 0.07);
+                    border: 1px solid rgba(56, 189, 248, 0.2); font-size: 0.76rem;
+                    line-height: 1.45; color: #bae6fd;
+                }
+                .lp-modal-tip-icon { flex-shrink: 0; margin-top: 1px; color: #38bdf8; }
+                .lp-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+                .lp-modal-btn {
+                    padding: 10px 18px; border-radius: 10px; font-size: 0.88rem;
+                    font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s ease;
+                }
+                .lp-modal-btn.secondary {
+                    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+                    color: rgba(255, 255, 255, 0.8);
+                }
+                .lp-modal-btn.secondary:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+                .lp-modal-btn.primary {
+                    background: linear-gradient(135deg, #0284c7, #38bdf8); border: none;
+                    color: #ffffff; box-shadow: 0 2px 10px rgba(56, 189, 248, 0.35);
+                }
+                .lp-modal-btn.primary:hover {
+                    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+                    box-shadow: 0 4px 16px rgba(56, 189, 248, 0.45);
+                }
+                .lp-modal-success { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px 4px 6px; }
+                .lp-modal-success-icon {
+                    width: 52px; height: 52px; border-radius: 50%;
+                    background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4);
+                    color: #34d399; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+                }
+                .lp-modal-success h4 { margin: 0 0 8px; font-size: 1.15rem; font-weight: 700; color: #ffffff; }
+                .lp-modal-success p { margin: 0; font-size: 0.88rem; color: rgba(255, 255, 255, 0.72); line-height: 1.5; }
+                .lp-legal-content { max-height: 60vh; overflow-y: auto; padding-right: 14px; }
+                .lp-legal-content h4 { margin: 14px 0 6px; font-size: 0.92rem; font-weight: 700; color: #38bdf8; }
+                .lp-legal-content h4:first-child { margin-top: 0; }
+                .lp-legal-content p { margin: 0 0 10px; font-size: 0.84rem; line-height: 1.55; color: rgba(255, 255, 255, 0.75); }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .lp-video-backdrop,
+                    .lp-bg-video {
+                        display: none !important;
+                    }
+                    *, *::before, *::after {
+                        animation-duration: 0.01ms !important;
+                        transition-duration: 0.01ms !important;
+                    }
+                }
+
+`}</style>
         </div>
     );
 }

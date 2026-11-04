@@ -17,7 +17,7 @@ import MyReports from "../components/MyReports";
 import EditorialHome from "../components/EditorialHome";
 import UrbanAdvisorChat from "../components/UrbanAdvisorChat";
 import { Detection, DetectionResult, DBEntry, Stats } from "../types";
-import { AlertTriangle, X, Activity, Camera, Database, Sun, Moon, RefreshCw, ShieldAlert, Scan, Download, Eye, Crosshair, Radio, Zap, Maximize, Minimize, Trash2, WifiOff, Shield, Bell, Video, Play, Pause, Layers, Menu, Check, Upload, Settings, User as UserIcon, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { AlertTriangle, X, Activity, Camera, Database, Sun, Moon, RefreshCw, ShieldAlert, Scan, Download, Eye, Crosshair, Radio, Zap, Maximize, Minimize, Trash2, WifiOff, Shield, Bell, Video, Play, Pause, Layers, Menu, Check, Upload, Settings, User as UserIcon, PanelLeftClose, PanelLeftOpen, ChevronUp, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/Logo";
 import { API_BASE } from "../api/config";
@@ -44,7 +44,7 @@ const PRIVACY_CLASSES = new Set(["person", "car", "motorcycle", "bus", "truck", 
 
 const Dashboard: React.FC = () => {
     const { t } = useTranslation();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [userAvatar, setUserAvatar] = useState<string | null>(() => {
         const key = `si_user_avatar_${user?.id || user?.email || "default"}`;
         return localStorage.getItem(key);
@@ -53,12 +53,10 @@ const Dashboard: React.FC = () => {
         const key = `si_user_custom_name_${user?.id || user?.email || "default"}`;
         return localStorage.getItem(key) || user?.name || "";
     });
-    const [showProfileModal, setShowProfileModal] = useState(false);
-    const [editNameInput, setEditNameInput] = useState("");
-    const [nameSavedFeedback, setNameSavedFeedback] = useState(false);
-    const avatarFileInputRef = useRef<HTMLInputElement>(null);
-
-    const PRESET_AVATARS = ["🤖", "🛡️", "⚡", "👷", "🎯", "🏙️", "🕵️", "🚀"];
+    const [settingsTab, setSettingsTab] = useState<string>("profile");
+    const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
+    const [isGlobalFullscreen, setIsGlobalFullscreen] = useState<boolean>(false);
+    const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
 
     useEffect(() => {
         if (user) {
@@ -70,65 +68,8 @@ const Dashboard: React.FC = () => {
             const savedName = localStorage.getItem(nameKey);
             const initialName = savedName || user.name || user.email?.split("@")[0] || "User";
             setCustomName(initialName);
-            setEditNameInput(initialName);
         }
     }, [user]);
-
-    const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const uploadFile = e.target.files?.[0];
-        if (!uploadFile) return;
-        if (!uploadFile.type.startsWith("image/")) {
-            alert("Please choose a valid image file (PNG, JPG, WebP, etc.)");
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement("canvas");
-                const size = 160;
-                canvas.width = size;
-                canvas.height = size;
-                const ctx = canvas.getContext("2d");
-                if (ctx) {
-                    const minSide = Math.min(img.width, img.height);
-                    const sx = (img.width - minSide) / 2;
-                    const sy = (img.height - minSide) / 2;
-                    ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-                    const dataUrl = canvas.toDataURL("image/webp", 0.9);
-                    setUserAvatar(dataUrl);
-                    const key = `si_user_avatar_${user?.id || user?.email || "default"}`;
-                    localStorage.setItem(key, dataUrl);
-                }
-            };
-            img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(uploadFile);
-    };
-
-    const handleSelectPresetAvatar = (icon: string) => {
-        setUserAvatar(icon);
-        const key = `si_user_avatar_${user?.id || user?.email || "default"}`;
-        localStorage.setItem(key, icon);
-    };
-
-    const handleRemoveAvatar = () => {
-        setUserAvatar(null);
-        const key = `si_user_avatar_${user?.id || user?.email || "default"}`;
-        localStorage.removeItem(key);
-        if (avatarFileInputRef.current) avatarFileInputRef.current.value = "";
-    };
-
-    const handleSaveCustomName = (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        const trimmed = editNameInput.trim();
-        if (!trimmed) return;
-        setCustomName(trimmed);
-        const key = `si_user_custom_name_${user?.id || user?.email || "default"}`;
-        localStorage.setItem(key, trimmed);
-        setNameSavedFeedback(true);
-        setTimeout(() => setNameSavedFeedback(false), 2000);
-    };
 
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
@@ -285,13 +226,49 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
-            if (showNotifications && !target.closest('.notifications-dropdown') && !target.closest('.theme-toggle-compact')) {
+            if (showNotifications && !target.closest('.notifications-dropdown') && !target.closest('.notification-trigger-btn')) {
                 setShowNotifications(false);
+            }
+            if (showProfileMenu && !target.closest('.profile-menu-dropdown') && !target.closest('.profile-icon-btn')) {
+                setShowProfileMenu(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showNotifications]);
+    }, [showNotifications, showProfileMenu]);
+
+    // ── UX: Global Fullscreen & Hotkeys ──
+    const toggleGlobalFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().then(() => setIsGlobalFullscreen(true)).catch(() => {});
+        } else {
+            document.exitFullscreen().then(() => setIsGlobalFullscreen(false)).catch(() => {});
+        }
+    };
+
+    useEffect(() => {
+        const handleFsChange = () => {
+            setIsGlobalFullscreen(Boolean(document.fullscreenElement));
+        };
+        document.addEventListener("fullscreenchange", handleFsChange);
+        return () => document.removeEventListener("fullscreenchange", handleFsChange);
+    }, []);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY || document.querySelector(".main-content-area")?.scrollTop || 0;
+            setShowScrollTop(scrollY > 280);
+        };
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        const contentArea = document.querySelector(".main-content-area");
+        if (contentArea) contentArea.addEventListener("scroll", handleScroll, { passive: true });
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            if (contentArea) contentArea.removeEventListener("scroll", handleScroll);
+        };
+    }, []);
 
     useEffect(() => {
         localStorage.setItem("si_theme_mode", theme);
@@ -317,7 +294,9 @@ const Dashboard: React.FC = () => {
         const wsUrl = `${wsProtocol}//${wsHost}/ws`;
         const socket = new WebSocket(wsUrl);
 
-        socket.onopen = () => console.log("[WS] Connected to Smart-Infra Backend");
+        socket.onopen = () => {
+            console.log("[WS] Connected to Smart-Infra Backend");
+        };
         socket.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
@@ -969,6 +948,16 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="header-right-group">
+                    {/* Fullscreen Toggle */}
+                    <button
+                        className={`theme-toggle-compact ${isGlobalFullscreen ? "active" : ""}`}
+                        onClick={toggleGlobalFullscreen}
+                        title={isGlobalFullscreen ? "Exit Fullscreen (F11)" : "Enter Fullscreen (F11)"}
+                        aria-label="Toggle Fullscreen"
+                    >
+                        {isGlobalFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                    </button>
+
                     {!user?.is_admin && (
                         <button
                             className={`theme-toggle-compact ${activeTab === 'Webcam' ? 'active' : ''}`}
@@ -987,7 +976,7 @@ const Dashboard: React.FC = () => {
                     </button>
                     <div style={{ position: 'relative' }}>
                         <button
-                            className={`theme-toggle-compact ${showNotifications ? 'active' : ''}`}
+                            className={`theme-toggle-compact notification-trigger-btn ${showNotifications ? 'active' : ''}`}
                             title="Notifications"
                             onClick={() => setShowNotifications(!showNotifications)}
                         >
@@ -1083,177 +1072,115 @@ const Dashboard: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="header-user-profile">
-                        <input
-                            type="file"
-                            ref={avatarFileInputRef}
-                            onChange={handleAvatarUpload}
-                            accept="image/png,image/jpeg,image/webp,image/gif"
-                            style={{ display: "none" }}
-                        />
-                        <div
-                            className="header-avatar-wrap clickable"
-                            onClick={() => setShowProfileModal(true)}
-                            title="Click to edit profile icon & settings"
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") setShowProfileModal(true);
-                            }}
+                    {/* Improved Profile Icon with Quick Dropdown */}
+                    <div style={{ position: 'relative' }}>
+                        <button
+                            className={`theme-toggle-compact profile-icon-btn ${showProfileMenu ? 'active' : ''}`}
+                            onClick={() => setShowProfileMenu(prev => !prev)}
+                            title={`Account: ${customName || user?.name || user?.email || "User"}`}
+                            aria-label="User Account Menu"
+                            aria-expanded={showProfileMenu}
                         >
-                            <div className="header-avatar-circle">
-                                {userAvatar ? (
-                                    userAvatar.startsWith("data:image") ? (
-                                        <img src={userAvatar} alt="Profile" className="header-avatar-img" />
-                                    ) : (
-                                        <span className="header-avatar-preset-icon">{userAvatar}</span>
-                                    )
+                            <div className="profile-icon-inner">
+                                {userAvatar && userAvatar.startsWith("data:image") ? (
+                                    <img src={userAvatar} alt="Profile" className="header-avatar-compact-img" />
+                                ) : userAvatar ? (
+                                    <span className="header-avatar-compact-preset">{userAvatar}</span>
                                 ) : (
-                                    user?.name ? user.name.charAt(0).toUpperCase() : user?.email ? user.email.charAt(0).toUpperCase() : "U"
+                                    <UserIcon size={18} className="profile-icon-svg" />
                                 )}
-                                <div className="header-avatar-hover-overlay" title="Edit Profile Icon">
-                                    <Camera size={12} />
+                                <span className="profile-icon-status-dot" title="Authenticated Live Session" />
+                            </div>
+                        </button>
+
+                        {showProfileMenu && (
+                            <div className="profile-menu-dropdown glass-card animate-in">
+                                {/* Header / Identity Card */}
+                                <div className="profile-menu-header">
+                                    <div className="profile-menu-avatar-wrap">
+                                        {userAvatar && userAvatar.startsWith("data:image") ? (
+                                            <img src={userAvatar} alt="Avatar" className="profile-menu-avatar-img" />
+                                        ) : userAvatar ? (
+                                            <span className="profile-menu-avatar-preset">{userAvatar}</span>
+                                        ) : (
+                                            <div className="profile-menu-avatar-fallback">
+                                                <UserIcon size={20} />
+                                            </div>
+                                        )}
+                                        <span className="profile-menu-status-orb" />
+                                    </div>
+                                    <div className="profile-menu-identity">
+                                        <div className="profile-menu-name">
+                                            {customName || user?.name || user?.email?.split('@')[0] || "User"}
+                                        </div>
+                                        <div className="profile-menu-email">{user?.email || "user@smart-infra.local"}</div>
+                                        <div className="profile-menu-role-chip">
+                                            {user?.is_admin ? "🛡️ Administrator" : "👷 Field Inspector"}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="profile-menu-divider" />
+
+                                {/* Action Links */}
+                                <div className="profile-menu-actions">
+                                    <button
+                                        type="button"
+                                        className="profile-menu-item"
+                                        onClick={() => {
+                                            setSettingsTab("profile");
+                                            setActiveTab("Configuration");
+                                            setShowProfileMenu(false);
+                                        }}
+                                    >
+                                        <UserIcon size={16} className="profile-menu-item-icon text-sky-400" />
+                                        <div className="profile-menu-item-text">
+                                            <span className="profile-menu-item-title">Profile &amp; Avatar</span>
+                                            <span className="profile-menu-item-sub">Customize photo, icon &amp; name</span>
+                                        </div>
+                                    </button>
+
+                                </div>
+
+                                <div className="profile-menu-divider" />
+
+                                {/* Logout Footer */}
+                                <div className="profile-menu-footer">
+                                    <button
+                                        type="button"
+                                        className="profile-menu-logout-btn"
+                                        onClick={() => {
+                                            setShowProfileMenu(false);
+                                            logout();
+                                        }}
+                                    >
+                                        <LogOut size={15} />
+                                        <span>Sign Out</span>
+                                    </button>
                                 </div>
                             </div>
-                            <span className="header-user-status" />
-                        </div>
-                        <div
-                            className="header-user-name-clickable"
-                            onClick={() => setShowProfileModal(true)}
-                            title="Click to edit profile or open settings"
-                        >
-                            <span className="header-user-name">
-                                {customName || user?.name || user?.email?.split('@')[0] || "User"}
-                            </span>
-                        </div>
+                        )}
                     </div>
                 </div>
             </header>
 
-            {/* ── Profile & Avatar Editor Modal ── */}
-            {showProfileModal && (
-                <div className="profile-modal-backdrop" onClick={() => setShowProfileModal(false)}>
-                    <div className="profile-modal-card" onClick={(e) => e.stopPropagation()}>
-                        <div className="profile-modal-header">
-                            <div className="profile-modal-title-group">
-                                <h3 className="profile-modal-title">Edit Profile & Avatar</h3>
-                                <p className="profile-modal-subtitle">{user?.email || "Signed in user"}</p>
-                            </div>
-                            <button
-                                className="profile-modal-close-btn"
-                                onClick={() => setShowProfileModal(false)}
-                                title="Close"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        <div className="profile-modal-body">
-                            {/* Avatar Preview & Actions */}
-                            <div className="profile-modal-avatar-section">
-                                <div
-                                    className="profile-modal-avatar-preview"
-                                    onClick={() => avatarFileInputRef.current?.click()}
-                                    title="Click to upload new image"
-                                >
-                                    {userAvatar ? (
-                                        userAvatar.startsWith("data:image") ? (
-                                            <img src={userAvatar} alt="Avatar Preview" className="profile-modal-avatar-img" />
-                                        ) : (
-                                            <span className="profile-modal-avatar-preset">{userAvatar}</span>
-                                        )
-                                    ) : (
-                                        <span className="profile-modal-avatar-initial">
-                                            {customName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
-                                        </span>
-                                    )}
-                                    <div className="profile-modal-avatar-badge">
-                                        <Camera size={14} />
-                                    </div>
-                                </div>
-
-                                <div className="profile-modal-avatar-cta-group">
-                                    <button
-                                        type="button"
-                                        className="profile-modal-btn primary"
-                                        onClick={() => avatarFileInputRef.current?.click()}
-                                    >
-                                        <Upload size={14} />
-                                        <span>Upload Photo</span>
-                                    </button>
-                                    {userAvatar && (
-                                        <button
-                                            type="button"
-                                            className="profile-modal-btn danger"
-                                            onClick={handleRemoveAvatar}
-                                        >
-                                            <Trash2 size={14} />
-                                            <span>Reset to Default</span>
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Preset Avatar Gallery */}
-                            <div className="profile-modal-presets-section">
-                                <label className="profile-modal-section-label">Or Choose an Avatar Icon</label>
-                                <div className="profile-modal-presets-grid">
-                                    {PRESET_AVATARS.map((icon, idx) => (
-                                        <button
-                                            key={idx}
-                                            type="button"
-                                            className={`profile-preset-chip ${userAvatar === icon ? "active" : ""}`}
-                                            onClick={() => handleSelectPresetAvatar(icon)}
-                                            title={`Select ${icon}`}
-                                        >
-                                            {icon}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Display Name Edit */}
-                            <form className="profile-modal-name-section" onSubmit={handleSaveCustomName}>
-                                <label className="profile-modal-section-label">Display Name</label>
-                                <div className="profile-modal-name-row">
-                                    <input
-                                        type="text"
-                                        className="profile-modal-name-input"
-                                        value={editNameInput}
-                                        onChange={(e) => setEditNameInput(e.target.value)}
-                                        placeholder="Enter your name"
-                                        maxLength={40}
-                                    />
-                                    <button
-                                        type="submit"
-                                        className={`profile-modal-save-btn ${nameSavedFeedback ? "saved" : ""}`}
-                                    >
-                                        <Check size={14} />
-                                        <span>{nameSavedFeedback ? "Saved!" : "Save"}</span>
-                                    </button>
-                                </div>
-                            </form>
-
-                            <div className="profile-modal-divider" />
-
-                            {/* Settings Shortcut */}
-                            <div className="profile-modal-footer">
-                                <button
-                                    type="button"
-                                    className="profile-modal-settings-link"
-                                    onClick={() => {
-                                        setActiveTab("Configuration");
-                                        setShowProfileModal(false);
-                                    }}
-                                >
-                                    <Settings size={16} />
-                                    <span>Open System Settings & AI Config</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {/* ── Floating Back to Top Button ── */}
+            {showScrollTop && (
+                <button
+                    type="button"
+                    className="floating-scroll-top-btn"
+                    onClick={() => {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        const contentArea = document.querySelector(".main-content-area");
+                        if (contentArea) contentArea.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    title="Back to Top"
+                    aria-label="Scroll back to top"
+                >
+                    <ChevronUp size={20} />
+                </button>
             )}
+
 
             <div className="tab-container">
                 <Sidebar
@@ -1386,7 +1313,16 @@ const Dashboard: React.FC = () => {
                         {activeTab === "Report" && !user?.is_admin && <ReportIssue onReturn={() => setActiveTab("Home")} />}
                         {activeTab === "MyReports" && !user?.is_admin && <ReportIssue initialView="myreports" onReturn={() => setActiveTab("Home")} />}
                         {activeTab === "Configuration" && (
-                            <AiConfig theme={theme} toggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} user={user} />
+                            <AiConfig
+                                theme={theme}
+                                toggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                user={user}
+                                userAvatar={userAvatar}
+                                setUserAvatar={setUserAvatar}
+                                customName={customName}
+                                setCustomName={setCustomName}
+                                initialTab={settingsTab}
+                            />
                         )}
 
                         {activeTab === "Webcam" && !user?.is_admin && (

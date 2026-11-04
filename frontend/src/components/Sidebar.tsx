@@ -95,11 +95,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <button
                         className="nav-item-v2 logout-btn"
                         onClick={() => logout()}
-                        title="Log Out"
+                        title="Sign Out"
                         type="button"
                     >
                         <LogOut size={18} />
-                        <span className="nav-label sidebar-logout-text">Log Out</span>
+                        <span className="nav-label sidebar-logout-text">Sign Out</span>
                     </button>
                 </div>
             </aside>

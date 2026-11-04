@@ -3,7 +3,7 @@ import {
   SlidersHorizontal, Target, Zap, Save, RotateCcw,
   CheckCircle, Trash2, Sun, Moon, AlertTriangle, Cpu, MapPin,
   HelpCircle, ChevronDown, Shield, Eye, Fingerprint, Activity,
-  Copy, Layers, Sparkles, Check
+  Copy, Layers, Sparkles, Check, User, Camera, Upload
 } from "lucide-react";
 import axios from "axios";
 import { API_BASE } from "../api/config";
@@ -51,16 +51,132 @@ function load(): Config {
   }
 }
 
+interface AiConfigProps {
+  theme: "dark" | "light";
+  toggleTheme: () => void;
+  user: any;
+  userAvatar?: string | null;
+  setUserAvatar?: (val: string | null) => void;
+  customName?: string;
+  setCustomName?: (val: string) => void;
+  initialTab?: string;
+}
+
 export default function AiConfig({
-  theme, toggleTheme, user
-}: { theme: "dark" | "light"; toggleTheme: () => void; user: any }) {
+  theme,
+  toggleTheme,
+  user,
+  userAvatar,
+  setUserAvatar,
+  customName,
+  setCustomName,
+  initialTab = "profile",
+}: AiConfigProps) {
   const [cfg, setCfg] = useState<Config>(load);
   const [saved, setSaved] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearDone, setClearDone] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("identity");
+  const [activeTab, setActiveTab] = useState<string>(initialTab || "profile");
+
+  // Profile & Avatar State
+  const [localAvatar, setLocalAvatar] = useState<string | null>(() => {
+    if (userAvatar !== undefined) return userAvatar;
+    const key = `si_user_avatar_${user?.id || user?.email || "default"}`;
+    return localStorage.getItem(key);
+  });
+  const [localName, setLocalName] = useState<string>(() => {
+    if (customName !== undefined && customName !== "") return customName;
+    const key = `si_user_custom_name_${user?.id || user?.email || "default"}`;
+    return localStorage.getItem(key) || user?.name || "";
+  });
+  const [editNameInput, setEditNameInput] = useState<string>(() => {
+    return localName || user?.name || user?.email?.split("@")[0] || "User";
+  });
+  const [nameSavedFeedback, setNameSavedFeedback] = useState(false);
+  const avatarFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const PRESET_AVATARS = ["🤖", "🛡️", "⚡", "👷", "🎯", "🏙️", "🕵️", "🚀", "💻", "🛰️", "🔬", "🌟"];
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (userAvatar !== undefined) {
+      setLocalAvatar(userAvatar);
+    }
+  }, [userAvatar]);
+
+  useEffect(() => {
+    if (customName !== undefined) {
+      setLocalName(customName);
+      setEditNameInput(customName);
+    }
+  }, [customName]);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadFile = e.target.files?.[0];
+    if (!uploadFile) return;
+    if (!uploadFile.type.startsWith("image/")) {
+      alert("Please choose a valid image file (PNG, JPG, WebP, etc.)");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const size = 160;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2;
+          const sy = (img.height - minSide) / 2;
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+          const dataUrl = canvas.toDataURL("image/webp", 0.9);
+          setLocalAvatar(dataUrl);
+          if (setUserAvatar) setUserAvatar(dataUrl);
+          const key = `si_user_avatar_${user?.id || user?.email || "default"}`;
+          localStorage.setItem(key, dataUrl);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(uploadFile);
+  };
+
+  const handleSelectPresetAvatar = (icon: string) => {
+    setLocalAvatar(icon);
+    if (setUserAvatar) setUserAvatar(icon);
+    const key = `si_user_avatar_${user?.id || user?.email || "default"}`;
+    localStorage.setItem(key, icon);
+  };
+
+  const handleRemoveAvatar = () => {
+    setLocalAvatar(null);
+    if (setUserAvatar) setUserAvatar(null);
+    const key = `si_user_avatar_${user?.id || user?.email || "default"}`;
+    localStorage.removeItem(key);
+    if (avatarFileInputRef.current) avatarFileInputRef.current.value = "";
+  };
+
+  const handleSaveCustomName = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = editNameInput.trim();
+    if (!trimmed) return;
+    setLocalName(trimmed);
+    if (setCustomName) setCustomName(trimmed);
+    const key = `si_user_custom_name_${user?.id || user?.email || "default"}`;
+    localStorage.setItem(key, trimmed);
+    setNameSavedFeedback(true);
+    setTimeout(() => setNameSavedFeedback(false), 2000);
+  };
 
   const set = <K extends keyof Config>(k: K, v: Config[K]) =>
     setCfg(prev => ({ ...prev, [k]: v }));
@@ -121,6 +237,7 @@ export default function AiConfig({
   };
 
   const navItems = [
+    { id: "profile", label: "Profile & Avatar", Icon: User },
     { id: "identity", label: "Identity & Workspace", Icon: Fingerprint },
     { id: "ai", label: "AI Vision & Detection", Icon: Eye },
     { id: "model", label: "Model & Inference", Icon: Cpu },
@@ -185,6 +302,163 @@ export default function AiConfig({
 
         {/* Right Main Content Panel */}
         <main>
+          {/* TAB 0: PROFILE & AVATAR */}
+          {activeTab === "profile" && (
+            <div className="aiconfig-section-card">
+              <div className="aiconfig-section-header">
+                <div className="aiconfig-section-title-wrap">
+                  <div className="aiconfig-section-icon-wrap">
+                    <User size={18} />
+                  </div>
+                  <h2 className="aiconfig-section-title">Edit Profile &amp; Avatar</h2>
+                </div>
+                <p className="aiconfig-section-subtitle">
+                  Customize your personal avatar emblem, upload a profile photo, and edit your system display name.
+                </p>
+              </div>
+
+              {/* Hidden File Input */}
+              <input
+                type="file"
+                ref={avatarFileInputRef}
+                onChange={handleAvatarUpload}
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                style={{ display: "none" }}
+              />
+
+              <div className="aiconfig-profile-card">
+                <div className="aiconfig-profile-avatar-row">
+                  <div
+                    className="aiconfig-profile-avatar-preview"
+                    onClick={() => avatarFileInputRef.current?.click()}
+                    title="Click to upload new profile photo"
+                  >
+                    {localAvatar ? (
+                      localAvatar.startsWith("data:image") ? (
+                        <img src={localAvatar} alt="Profile" className="aiconfig-profile-avatar-img" />
+                      ) : (
+                        <span className="aiconfig-profile-avatar-preset">{localAvatar}</span>
+                      )
+                    ) : (
+                      <span className="aiconfig-profile-avatar-initial">
+                        {localName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
+                      </span>
+                    )}
+                    <div className="aiconfig-profile-avatar-badge" title="Upload Photo">
+                      <Camera size={14} />
+                    </div>
+                  </div>
+
+                  <div className="aiconfig-profile-avatar-info">
+                    <h3 className="aiconfig-profile-display-name">
+                      {localName || user?.name || user?.email?.split("@")[0] || "User"}
+                    </h3>
+                    <p className="aiconfig-profile-email-meta">{user?.email || "user@smart-infra.local"}</p>
+                    <div className="aiconfig-profile-role-tag">
+                      {user?.is_admin ? "🛡️ System Administrator" : "👷 Field Engineer / Inspector"}
+                    </div>
+                    <div className="aiconfig-profile-avatar-btn-group">
+                      <button
+                        type="button"
+                        className="aiconfig-btn-secondary compact"
+                        onClick={() => avatarFileInputRef.current?.click()}
+                      >
+                        <Upload size={14} />
+                        <span>Upload Photo</span>
+                      </button>
+                      {localAvatar && (
+                        <button
+                          type="button"
+                          className="aiconfig-btn-danger compact"
+                          onClick={handleRemoveAvatar}
+                        >
+                          <Trash2 size={14} />
+                          <span>Reset to Default</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preset Avatar Gallery */}
+                <div className="aiconfig-preset-container">
+                  <label className="aiconfig-field-label">Choose an Avatar Icon</label>
+                  <span className="aiconfig-field-desc">Quickly select a stylized emblem or emoji avatar</span>
+                  <div className="aiconfig-preset-grid">
+                    {PRESET_AVATARS.map((icon, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`aiconfig-preset-chip ${localAvatar === icon ? "active" : ""}`}
+                        onClick={() => handleSelectPresetAvatar(icon)}
+                        title={`Select ${icon}`}
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Display Name & Info Fields */}
+              <div className="aiconfig-fields-stack">
+                <form className="aiconfig-field-row" onSubmit={handleSaveCustomName}>
+                  <div className="aiconfig-field-meta">
+                    <label className="aiconfig-field-label">Display Name</label>
+                    <span className="aiconfig-field-desc">Shown across headers, detections, and activity reports</span>
+                  </div>
+                  <div className="aiconfig-field-control" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input
+                      type="text"
+                      className="aiconfig-input-text"
+                      value={editNameInput}
+                      onChange={(e) => setEditNameInput(e.target.value)}
+                      placeholder="Enter your name"
+                      maxLength={40}
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="submit"
+                      className={`aiconfig-btn-primary ${nameSavedFeedback ? "saved" : ""}`}
+                      style={{ minWidth: "115px", height: "42px" }}
+                    >
+                      {nameSavedFeedback ? <Check size={15} /> : <Save size={15} />}
+                      <span>{nameSavedFeedback ? "Saved!" : "Save Name"}</span>
+                    </button>
+                  </div>
+                </form>
+
+                <div className="aiconfig-field-row">
+                  <div className="aiconfig-field-meta">
+                    <label className="aiconfig-field-label">Account Email</label>
+                    <span className="aiconfig-field-desc">Authorized Google OAuth / system identity</span>
+                  </div>
+                  <div className="aiconfig-field-control">
+                    <input
+                      type="text"
+                      className="aiconfig-input-text"
+                      value={user?.email || "user@smart-infra.local"}
+                      disabled
+                      style={{ opacity: 0.75, cursor: "not-allowed" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="aiconfig-field-row">
+                  <div className="aiconfig-field-meta">
+                    <label className="aiconfig-field-label">Permissions Role</label>
+                    <span className="aiconfig-field-desc">Operational clearance for camera feed and models</span>
+                  </div>
+                  <div className="aiconfig-field-control">
+                    <span className="aiconfig-badge-chip" style={{ fontSize: "0.8rem", padding: "6px 14px" }}>
+                      {user?.is_admin ? "Full Administrator Rights" : "Field Operator Rights"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 1: IDENTITY */}
           {activeTab === "identity" && (
             <div className="aiconfig-section-card">
