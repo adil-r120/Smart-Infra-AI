@@ -149,6 +149,49 @@ function MapCameraController({
     return null;
 }
 
+// ── Auto-Resizer to fix white/blank tiles on sidebar toggle & resize ───────────
+function MapAutoResizer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
+    const map = useMap();
+
+    useEffect(() => {
+        const fire = () => {
+            try {
+                map.invalidateSize({ animate: false });
+            } catch {}
+        };
+
+        fire();
+        const t1 = setTimeout(fire, 60);
+        const t2 = setTimeout(fire, 180);
+        const t3 = setTimeout(fire, 320);
+        const t4 = setTimeout(fire, 600);
+        const t5 = setTimeout(fire, 1000);
+
+        const container = map.getContainer();
+        const parent = container?.parentElement;
+        let ro: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== "undefined") {
+            ro = new ResizeObserver(() => fire());
+            if (container) ro.observe(container);
+            if (parent) ro.observe(parent);
+        }
+
+        window.addEventListener("resize", fire);
+
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+            clearTimeout(t4);
+            clearTimeout(t5);
+            if (ro) ro.disconnect();
+            window.removeEventListener("resize", fire);
+        };
+    }, [map, isSidebarOpen]);
+
+    return null;
+}
+
 function FlyToUser({ loc }: { loc: UserLocation | null }) {
     const map = useMap();
     const didFly = useRef(false);
@@ -860,6 +903,7 @@ export default function MonitoringMap() {
                             attribution={currentBaseTile.attribution}
                             maxZoom={22}
                             maxNativeZoom={20}
+                            keepBuffer={6}
                         />
 
                         {/* Google Traffic Overlay */}
@@ -872,9 +916,11 @@ export default function MonitoringMap() {
                                 maxNativeZoom={20}
                                 opacity={0.88}
                                 zIndex={300}
+                                keepBuffer={6}
                             />
                         )}
 
+                        <MapAutoResizer isSidebarOpen={isSidebarOpen} />
                         <FlyToUser loc={userLoc} />
                         <MapCameraController targetCoords={targetCamera} targetZoom={17} />
 
@@ -1630,10 +1676,13 @@ export default function MonitoringMap() {
 
                 .split-map-root.sidebar-collapsed .split-feed-sidebar {
                     width: 0;
+                    min-width: 0;
+                    max-width: 0;
                     border-left: none;
                     opacity: 0;
                     pointer-events: none;
                     box-shadow: none;
+                    overflow: hidden;
                 }
 
                 /* Header */
