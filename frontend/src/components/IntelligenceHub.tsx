@@ -99,57 +99,139 @@ const IntelligenceHub: React.FC<IntelligenceHubProps> = () => {
     }, []);
 
     const Metric = ({ icon: Icon, label, value, color, percent }: any) => (
-        <div className="resilience-metric-compact" style={{ 
-            display: 'flex', flexDirection: 'column', padding: '12px 16px', background: 'var(--bg-surface)', 
-            borderRadius: '16px', border: '1px solid var(--border)', flex: 1, minWidth: '140px', opacity: 0.9
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Icon size={14} color={color} />
-                <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+        <div 
+            className="resilience-metric-compact" 
+            style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                padding: '14px 16px', 
+                background: 'var(--bg-surface)', 
+                borderRadius: '12px', 
+                border: '1px solid var(--border)', 
+                flex: 1, 
+                minWidth: '135px',
+                transition: 'all 0.2s ease',
+                position: 'relative'
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 6,
+                        background: `${color}18`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: color
+                    }}>
+                        <Icon size={13} />
+                    </div>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {label}
+                    </span>
+                </div>
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 6 }}>{value}</div>
-            <div style={{ height: 2, background: 'var(--border)', borderRadius: 1 }}>
-                <div style={{ width: `${percent}%`, height: '100%', background: color, boxShadow: `0 0 8px ${color}44` }}></div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 8, letterSpacing: '-0.02em' }}>
+                {value}
+            </div>
+            <div style={{ height: 4, background: 'rgba(255, 255, 255, 0.06)', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ 
+                    width: `${Math.min(100, Math.max(8, percent))}%`, 
+                    height: '100%', 
+                    background: color, 
+                    borderRadius: 999,
+                    boxShadow: `0 0 8px ${color}66`,
+                    transition: 'width 0.8s ease'
+                }} />
             </div>
         </div>
     );
 
     return (
-        <div className="intelligence-hub" style={{ marginTop: '24px' }}>
-            <div className="stat-card" style={{ 
-                padding: '20px 24px', borderRadius: '28px', border: '1px solid var(--border)', 
-                background: 'var(--bg-card)', boxShadow: 'var(--shadow-premium)' 
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div className="intelligence-hub" style={{ marginTop: '8px', marginBottom: '24px' }}>
+            <div 
+                className="stat-card" 
+                style={{ 
+                    padding: '22px 24px', 
+                    borderRadius: '16px', 
+                    border: '1px solid var(--border)', 
+                    background: 'var(--bg-card)', 
+                    boxShadow: 'var(--shadow-sm)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}
+            >
+                {/* Top cyan gradient hairline */}
+                <div 
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '2px',
+                        background: 'linear-gradient(90deg, transparent, #38bdf8, transparent)',
+                        opacity: 0.8
+                    }} 
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'var(--primary-glow)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Gauge size={20} />
+                        <div style={{ 
+                            width: 36, 
+                            height: 36, 
+                            borderRadius: '10px', 
+                            background: 'rgba(56, 189, 248, 0.1)', 
+                            color: '#38bdf8', 
+                            border: '1px solid rgba(56, 189, 248, 0.25)',
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            boxShadow: '0 0 12px rgba(56, 189, 248, 0.15)'
+                        }}>
+                            <Gauge size={19} />
                         </div>
-                        <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.12em', lineHeight: 1.2 }}>
-                            LIVE RESILIENCE HUD
-                        </h3>
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 900, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.2 }}>
+                                Environmental Resilience HUD
+                            </h3>
+                            <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                Atmospheric thermal stress impact on asphalt degradation
+                            </p>
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div className="status-badge-static" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--success)', padding: '5px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px var(--success)' }}></span>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--success)', fontWeight: 900, letterSpacing: '0.05em' }}>SYNCHRONIZED</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '4px 10px',
+                            borderRadius: '999px',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            border: '1px solid rgba(16, 185, 129, 0.25)',
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            color: 'var(--success)'
+                        }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px var(--success)' }} />
+                            <span>SYNCHRONIZED</span>
                         </div>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                            {weather.condition}
+                        </span>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '14px', overflowX: 'auto', paddingBottom: '6px' }} className="custom-scrollbar">
-                    <Metric icon={weather.icon} label="Surface" value={`${weather.temp}°C`} color="#3b82f6" percent={weather.temp * 2} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+                    <Metric icon={weather.icon} label="Surface Temp" value={`${weather.temp}°C`} color="#38bdf8" percent={weather.temp * 2} />
                     <Metric icon={Droplets} label="Humidity" value={`${weather.humidity}%`} color="#06b6d4" percent={weather.humidity} />
-                    <Metric icon={Wind} label="Wind" value={`${weather.wind}km/h`} color="#a78bfa" percent={weather.wind * 2} />
-                    <Metric icon={Activity} label="Stress" value={weather.stress} color={weather.stress === 'CRITICAL' ? 'var(--danger)' : 'var(--success)'} percent={weather.stressLevel} />
-                    <Metric icon={Sun} label="Solar" value={`UV ${weather.uv}`} color="#f59e0b" percent={weather.uv * 10} />
-                    <Metric icon={TrendingDown} label="Aging" value={weather.lifeImpact} color="#fb7185" percent={weather.stressLevel / 2} />
+                    <Metric icon={Wind} label="Wind Speed" value={`${weather.wind} km/h`} color="#a78bfa" percent={weather.wind * 2} />
+                    <Metric icon={Activity} label="Thermal Stress" value={weather.stress} color={weather.stress === 'CRITICAL' ? 'var(--danger)' : weather.stress === 'HIGH' ? '#f59e0b' : 'var(--success)'} percent={weather.stressLevel} />
+                    <Metric icon={Sun} label="Solar Index" value={`UV ${weather.uv}`} color="#f59e0b" percent={weather.uv * 10} />
+                    <Metric icon={TrendingDown} label="Aging Rate" value={weather.lifeImpact} color="#fb7185" percent={weather.stressLevel / 2} />
                 </div>
             </div>
-
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar { display: none; }
-            `}</style>
         </div>
     );
 };

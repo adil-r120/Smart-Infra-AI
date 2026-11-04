@@ -17,7 +17,7 @@ import MyReports from "../components/MyReports";
 import EditorialHome from "../components/EditorialHome";
 import UrbanAdvisorChat from "../components/UrbanAdvisorChat";
 import { Detection, DetectionResult, DBEntry, Stats } from "../types";
-import { AlertTriangle, X, Activity, Camera, Database, Sun, Moon, RefreshCw, ShieldAlert, Scan, Download, Eye, Crosshair, Radio, Zap, Maximize, Minimize, Trash2, WifiOff, Shield, Bell, Video, Play, Pause, Layers, Menu, Check, Upload, Settings, User as UserIcon } from "lucide-react";
+import { AlertTriangle, X, Activity, Camera, Database, Sun, Moon, RefreshCw, ShieldAlert, Scan, Download, Eye, Crosshair, Radio, Zap, Maximize, Minimize, Trash2, WifiOff, Shield, Bell, Video, Play, Pause, Layers, Menu, Check, Upload, Settings, User as UserIcon, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/Logo";
 import { API_BASE } from "../api/config";
@@ -141,7 +141,7 @@ const Dashboard: React.FC = () => {
         const validTabs = ["Home", "Dashboard", "Scanner", "Map", "History", "Admin", "Report", "MyReports", "Configuration", "Webcam"];
         if (saved && validTabs.includes(saved)) {
             // Non-admin cannot access admin-only tabs
-            if (!user?.is_admin && (saved === "Dashboard" || saved === "Admin" || saved === "History")) {
+            if (!user?.is_admin && (saved === "Dashboard" || saved === "Admin" || saved === "History" || saved === "Map")) {
                 return "Home";
             }
             // Admin cannot access user-only tabs (Scanner, Webcam, Report, MyReports)
@@ -154,7 +154,7 @@ const Dashboard: React.FC = () => {
     });
 
     useEffect(() => {
-        if (!user?.is_admin && (activeTab === "Dashboard" || activeTab === "Admin" || activeTab === "History")) {
+        if (!user?.is_admin && (activeTab === "Dashboard" || activeTab === "Admin" || activeTab === "History" || activeTab === "Map")) {
             setActiveTab("Home");
         } else if (user?.is_admin && (activeTab === "Home" || activeTab === "Scanner" || activeTab === "Webcam" || activeTab === "Report" || activeTab === "MyReports")) {
             setActiveTab("Dashboard");
@@ -181,7 +181,27 @@ const Dashboard: React.FC = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [scannerStatus, setScannerStatus] = useState<string | null>(null);
     const [alerts, setAlerts] = useState<any[]>([]);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('si_sidebar_open');
+            if (saved !== null) return saved === 'true';
+            return window.innerWidth >= 1024;
+        }
+        return true;
+    });
+
+    const handleToggleSidebar = () => {
+        setSidebarOpen(prev => {
+            const next = !prev;
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('si_sidebar_open', String(next));
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 300);
+            }
+            return next;
+        });
+    };
     const [dashRefreshing, setDashRefreshing] = useState(false);
     const [webcamPlaying, setWebcamPlaying] = useState(false);
     const [visualMode, setVisualMode] = useState<"Normal" | "Thermal" | "Infrared" | "Neural">("Normal");
@@ -938,11 +958,12 @@ const Dashboard: React.FC = () => {
                 <div className="header-left-group">
                     <button
                         className="mobile-sidebar-toggle"
-                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                        title="Toggle Navigation Menu"
+                        onClick={handleToggleSidebar}
+                        title={sidebarOpen ? "Close Navigation" : "Open Navigation"}
                         type="button"
+                        aria-label="Toggle Navigation"
                     >
-                        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+                        {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
                     </button>
                     <Logo size="medium" showText={true} />
                 </div>
@@ -1239,26 +1260,72 @@ const Dashboard: React.FC = () => {
                     activeTab={activeTab}
                     setActiveTab={(tab) => {
                         setActiveTab(tab);
-                        setSidebarOpen(false);
+                        if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+                            setSidebarOpen(false);
+                        }
                     }}
                     cameraActive={cameraActive}
                     handleCameraToggle={handleCameraToggle}
                     isOpen={sidebarOpen}
-                    toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                    toggleSidebar={handleToggleSidebar}
                     closeSidebar={() => setSidebarOpen(false)}
                 />
 
-                <div className="main-content-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div className="main-content-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
                     <div className={`tab-content-wrapper ${activeTab === "Home" && !user?.is_admin ? "home-tab-wrapper" : ""}`}>
                         {activeTab === "Dashboard" && user?.is_admin && (
                             <div className="animate-in dashboard-home">
-                                <div className="dashboard-header">
+                                <div className="dashboard-header" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
                                     <div>
-                                        <h1 className="dashboard-title">{t("dashboard.home.title", "Dashboard")}</h1>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                            <span style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 6,
+                                                padding: '3px 10px',
+                                                borderRadius: '999px',
+                                                fontSize: '0.68rem',
+                                                fontWeight: 800,
+                                                letterSpacing: '0.06em',
+                                                background: 'rgba(56, 189, 248, 0.1)',
+                                                border: '1px solid rgba(56, 189, 248, 0.25)',
+                                                color: '#38bdf8'
+                                            }}>
+                                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8', animation: 'pulseDot 2s infinite' }} />
+                                                LIVE
+                                            </span>
+                                            
+                                        </div>
+                                        <h1 className="dashboard-title" style={{ margin: 0, fontSize: '1.85rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
+                                            {t("dashboard.home.title", "Dashboard")}
+                                        </h1>
+                                        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                            Real-time municipal edge monitoring, pavement resilience telemetry, and structural analytics.
+                                        </p>
                                     </div>
-                                    <div className="dashboard-actions">
-                                        <button className="dash-action-btn" onClick={handleRefresh} disabled={dashRefreshing}>
-                                            <RefreshCw size={18} className={dashRefreshing ? "animate-spin" : ""} /><span>{t("dashboard.actions.refresh", "Refresh")}</span>
+                                    <div className="dashboard-actions" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <button 
+                                            className="dash-action-btn" 
+                                            onClick={handleRefresh} 
+                                            disabled={dashRefreshing}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '9px 18px',
+                                                borderRadius: '12px',
+                                                background: 'var(--bg-card)',
+                                                border: '1px solid var(--border)',
+                                                color: 'var(--text-main)',
+                                                fontWeight: 700,
+                                                fontSize: '0.85rem',
+                                                cursor: dashRefreshing ? 'not-allowed' : 'pointer',
+                                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                boxShadow: 'var(--shadow-sm)'
+                                            }}
+                                        >
+                                            <RefreshCw size={16} className={dashRefreshing ? "animate-spin" : ""} style={{ color: '#38bdf8' }} />
+                                            <span>{dashRefreshing ? 'Syncing...' : t("dashboard.actions.refresh", "Refresh")}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1302,7 +1369,7 @@ const Dashboard: React.FC = () => {
                             </div>
                         )}
 
-                        {activeTab === "Map" && (
+                        {activeTab === "Map" && user?.is_admin && (
                             <div className="animate-in dashboard-home" style={{ padding: '24px' }}>
                                 <div className="dashboard-header">
                                     <div>
@@ -1719,7 +1786,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Citizen Urban AI Advisor — Regular Users Only (Hidden for Admins) */}
-            {!user?.is_admin && <UrbanAdvisorChat setActiveTab={setActiveTab} />}
+            <UrbanAdvisorChat setActiveTab={setActiveTab} />
         </div>
     );
 };

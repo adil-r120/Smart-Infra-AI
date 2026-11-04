@@ -40,7 +40,8 @@ const UrbanAdvisorChat: React.FC<UrbanAdvisorChatProps> = ({ setActiveTab }) => 
         { label: "Report a Pothole", query: "How do I report a pothole or road issue?", tab: "Report" },
         { label: "Live Camera Scan", query: "How does the live camera detection work?", tab: "Webcam" },
         { label: "Upload Photo", query: "How do I scan an image from my phone?", tab: "Scanner" },
-        { label: "What AI Detects", query: "What kind of road damage can Smart-Infra detect?", tab: undefined }
+        { label: "What AI Detects", query: "What kind of road damage can Smart-Infra detect?", tab: undefined },
+        { label: "Dashboard Graphs", query: "What do the dashboard graph charts show?", tab: "Dashboard" }
     ];
 
     const scrollToBottom = () => {
@@ -91,6 +92,15 @@ const UrbanAdvisorChat: React.FC<UrbanAdvisorChatProps> = ({ setActiveTab }) => 
         actionLabel?: string; 
     } => {
         const q = query.toLowerCase();
+
+        if (q.includes('graph') || q.includes('chart') || q.includes('dashboard') || q.includes('analytics') || q.includes('telemetry')) {
+            return {
+                response: "The Infrastructure Command Dashboard visualizes 6 core analytics:\n1. 🕸️ Integrity Profile (Radar: Integrity, Precision, Flow, Safety, Depth)\n2. 📊 Object Classification Breakdown (Potholes, Cars, Trucks, Pedestrians)\n3. 📈 7-Day Ingestion vs Resolution Curve (Flagged hazards vs repaired defects)\n4. 🍩 Threat Severity & Risk Triage (Critical, Moderate, Low Risk, Traffic)\n5. ⏱️ Zonal SLA Benchmark (Actual hours vs contractual repair deadline)\n6. ⚡ Neural Detection Velocity (24h hourly anomaly distribution)",
+                tag: 'STATUS',
+                actionTab: 'Dashboard',
+                actionLabel: 'Go to Dashboard'
+            };
+        }
 
         if (q.includes('report') || q.includes('submit') || q.includes('complaint')) {
             return {

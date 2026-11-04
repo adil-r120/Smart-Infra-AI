@@ -56,9 +56,20 @@
     padding: 0 !important;
 }
 
+.main-content-area {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 .tab-content-wrapper {
     flex: 1;
+    min-width: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 22px 26px;
     background: var(--bg-body);
 }
@@ -165,9 +176,9 @@
     display: none;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
     background: var(--bg-surface);
     border: 1px solid var(--border);
     color: var(--text-main);
@@ -179,6 +190,13 @@
     background: rgba(56, 189, 248, 0.1);
     border-color: #38bdf8;
     color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+
+@media (max-width: 900px) {
+    .mobile-sidebar-toggle {
+        display: flex;
+    }
 }
 
 .header-status-pill {
@@ -2428,4 +2446,29 @@
 
 .light-theme .livefeed-card-conf-label {
     color: #64748b !important;
+}
+
+/* ==========================================================================
+   UPGRADED DASHBOARD TELEMETRY ENHANCEMENTS
+   ========================================================================== */
+.upgraded-stat-card:hover {
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3), 0 0 18px rgba(56, 189, 248, 0.12) !important;
+}
+
+.resilience-metric-compact:hover {
+    background: var(--bg-card) !important;
+    border-color: rgba(56, 189, 248, 0.3) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.analytics-section .stat-card {
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.analytics-section .stat-card:hover {
+    border-color: rgba(56, 189, 248, 0.35) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 0 20px rgba(56, 189, 248, 0.08) !important;
 }

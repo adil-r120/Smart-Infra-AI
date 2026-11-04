@@ -98,8 +98,16 @@ export default function AiConfig({
       setClearDone(true);
       window.dispatchEvent(new Event("detections_cleared"));
       setTimeout(() => setClearDone(false), 3000);
-    } catch {
-      alert("Failed to clear database. Ensure the backend server is reachable.");
+    } catch (err: any) {
+      console.error("Clear database failed:", err);
+      const detail = err.response?.data?.detail;
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        alert(detail || "Admin privileges required. Please ensure you are logged in as an administrator.");
+      } else if (!err.response || err.code === "ERR_NETWORK" || err.message?.includes("Network Error")) {
+        alert(`Cannot reach backend server at ${API_BASE}.\n\nPlease ensure your Python backend is running:\n• Run 'npm run backend' in a terminal\n• Or launch: scripts\\start_silent.bat`);
+      } else {
+        alert(`Failed to clear database: ${detail || err.message || "Unknown error"}`);
+      }
     } finally {
       setClearing(false);
     }

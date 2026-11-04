@@ -4,7 +4,7 @@ import {
   Shield, Eye, ChevronDown, MapPin, Cpu, FileText, BarChart3, 
   Layers, Radio, TrendingUp, AlertTriangle, ExternalLink, Zap,
   Check, XCircle, Clock, Server, Sliders, Database, Bot, Bell,
-  ShieldCheck, Wrench, Navigation, CheckCircle, Sun, Moon, ArrowUp
+  ShieldCheck, Wrench, Navigation, CheckCircle, Sun, Moon, ArrowUp, ClipboardList
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import "./EditorialHome.css";
@@ -257,7 +257,7 @@ const EditorialHome: React.FC<EditorialHomeProps> = ({ setActiveTab, theme, togg
     : [
         { id: "Webcam", label: "Live Feed", icon: Radio, color: "emerald", isLive: true },
         { id: "Scanner", label: "AI Scanner", icon: Scan, color: "cyan" },
-        { id: "Map", label: "GPS Map", icon: MapPin, color: "blue" },
+        { id: "MyReports", label: "My Reports", icon: ClipboardList, color: "blue" },
         { id: "Report", label: "Report Defect", icon: FileText, color: "amber" },
         { id: "Configuration", label: "Settings", icon: Sliders, color: "purple" },
       ];
@@ -628,11 +628,11 @@ const EditorialHome: React.FC<EditorialHomeProps> = ({ setActiveTab, theme, togg
                   <button
                     className="hero-btn-secondary"
                     onClick={() => {
-                      if (setActiveTab) setActiveTab("Map");
+                      if (setActiveTab) setActiveTab(user?.is_admin ? "Map" : "Scanner");
                     }}
                   >
                     <MapPin size={16} />
-                    <span>Open GIS Monitoring Map</span>
+                    <span>{user?.is_admin ? "Open GIS Monitoring Map" : "Launch AI Road Scanner"}</span>
                   </button>
                 </div>
               </div>
@@ -664,7 +664,7 @@ const EditorialHome: React.FC<EditorialHomeProps> = ({ setActiveTab, theme, togg
                 <ul className="footer-links-list">
                   <li><a href="#pipeline" onClick={(e) => { e.preventDefault(); scrollToContent(); }}>Edge Computer Vision</a></li>
                   <li><a href="#comparison" onClick={(e) => { e.preventDefault(); scrollToContent(); }}>YOLOv8 Segmentation</a></li>
-                  <li><a href="#gis" onClick={(e) => { e.preventDefault(); if (setActiveTab) setActiveTab("Map"); }}>GIS Telemetry & Heatmaps</a></li>
+                  <li><a href="#gis" onClick={(e) => { e.preventDefault(); if (setActiveTab) setActiveTab(user?.is_admin ? "Map" : "Scanner"); }}>GIS Telemetry & Heatmaps</a></li>
                   <li><a href="#openvino" onClick={(e) => { e.preventDefault(); setShowHowItWorks(true); }}>Intel OpenVINO Acceleration</a></li>
                   <li><a href="#ai" onClick={(e) => { e.preventDefault(); setShowHowItWorks(true); }}>AI Infrastructure Copilot</a></li>
                 </ul>
@@ -689,7 +689,7 @@ const EditorialHome: React.FC<EditorialHomeProps> = ({ setActiveTab, theme, togg
                   <li>
                     <button 
                       className="footer-link-btn" 
-                      onClick={() => { if (setActiveTab) setActiveTab("Map"); }}
+                      onClick={() => { if (setActiveTab) setActiveTab(user?.is_admin ? "Map" : "Scanner"); }}
                     >
                       <MapPin size={13} className="footer-btn-icon" />
                       <span>Interactive GPS Heatmap</span>
@@ -837,11 +837,11 @@ const EditorialHome: React.FC<EditorialHomeProps> = ({ setActiveTab, theme, togg
                 className="modal-action-btn"
                 onClick={() => {
                   setShowHowItWorks(false);
-                  if (setActiveTab) setActiveTab("Map");
+                  if (setActiveTab) setActiveTab(user?.is_admin ? "Map" : "Scanner");
                 }}
               >
                 <CheckCircle2 size={16} />
-                <span>View Monitoring GIS Map</span>
+                <span>{user?.is_admin ? "View Monitoring GIS Map" : "Open Road Scanner"}</span>
               </button>
             </div>
           </div>

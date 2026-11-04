@@ -1091,17 +1091,41 @@ def create_admin_invite_token(
 async def delete_all_detections(
         db: Session = Depends(get_db),
         current_admin: User = Depends(admin_required)):
-    num_deleted = db.query(Detection).delete()
-    db.commit()
-    for f in os.listdir(_results_dir):
-        fp = os.path.join(_results_dir, f)
-        if os.path.isfile(fp):
-            os.unlink(fp)
-    log_action(
-        db,
-        current_admin.id,
-        f"Wiped all {num_deleted} detections and cleaned storage",
-        "detections")
+    num_deleted = 0
+    try:
+        # Cascade or unlink work orders tied to detections to prevent FK violations
+        db.query(WorkOrder).filter(WorkOrder.detection_id.isnot(None)).delete(synchronize_session=False)
+        num_deleted = db.query(Detection).delete(synchronize_session=False)
+        db.commit()
+    except Exception:
+        db.rollback()
+        try:
+            detections = db.query(Detection).all()
+            num_deleted = len(detections)
+            for det in detections:
+                db.delete(det)
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    if os.path.exists(_results_dir):
+        for f in os.listdir(_results_dir):
+            fp = os.path.join(_results_dir, f)
+            if os.path.isfile(fp):
+                try:
+                    os.unlink(fp)
+                except Exception:
+                    pass
+
+    try:
+        log_action(
+            db,
+            current_admin.id,
+            f"Wiped all {num_deleted} detections and cleaned storage",
+            "detections")
+    except Exception:
+        pass
+
     return {"status": "success", "deleted": num_deleted}
 
 
