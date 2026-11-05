@@ -90,7 +90,7 @@ docker-compose up --build -d
 ### Accessing Services
 - 🖥️ **Command Center & HUD (Frontend):** [http://localhost](http://localhost) (or [http://localhost:5173](http://localhost:5173))
 - 📡 **Interactive API Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
-- 🗄️ **MySQL Database:** `localhost:3306` (Database: `smart_infra`, User: `root`)
+- 🗄️ **Database Service:** `localhost:3306` (Credentials and database name configured privately in `.env`)
 
 ### Inspecting Logs & Managing Containers
 ```powershell
@@ -179,13 +179,13 @@ cp backend/.env.example backend/.env
 
 | Variable | Description | Required | Recommended Format / Default |
 | :--- | :--- | :---: | :--- |
-| `DATABASE_URL` | SQLAlchemy connection URI | **Yes** | `mysql+pymysql://<user>:<password>@localhost:3306/smart_infra` |
-| `JWT_SECRET` | Secret key for cryptographic JWT signing | **Yes** | Generate with: `openssl rand -hex 32` |
-| `ADMIN_SIGNUP_CODE` | Private passphrase required for Admin registration | **Yes** | Long, high-entropy custom secret passphrase |
+| `DATABASE_URL` | SQLAlchemy connection URI | **Yes** | `mysql+pymysql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:<DB_PORT>/<DB_NAME>` |
+| `JWT_SECRET` | Secret key for cryptographic JWT signing | **Yes** | Private 32-byte cryptographic secret (e.g. `openssl rand -hex 32`) |
+| `ADMIN_SIGNUP_CODE` | Private passphrase required for Admin registration | **Yes** | Defined privately by deployment administrator |
 | `ADMIN_INVITE_TTL_HOURS` | Lifetime for admin invitation tokens (hours) | No | `24` |
 | `DETECTION_THRESHOLD` | Confidence threshold for YOLO detection | No | `0.45` (Range: `0.10` - `1.00`) |
 | `AI_PROVIDER` | LLM backend for Urban Advisor | No | `GEMINI` or `BYTEZ` |
-| `AI_API_KEY` | LLM API Key (stored privately in local `.env`) | Optional | Set locally when using generative AI features |
+| `AI_API_KEY` | LLM API Key (stored privately in local `.env`) | Optional | Set privately in local `.env` if utilizing generative AI |
 
 ---
 
