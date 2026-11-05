@@ -13,8 +13,9 @@ from briefing_engine import generate_live_briefing
 from models import Detection, Report, User, WorkOrder, AuditLog, AdminInviteToken, EdgeMetric, Notification
 from database import SessionLocal, init_db
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text, func, desc
+from sqlalchemy import text, func, desc, case
 from sqlalchemy.orm import Session, joinedload
+from starlette.concurrency import run_in_threadpool
 from datetime import datetime, timedelta
 from fastapi import FastAPI, UploadFile, File, Depends, Form, WebSocket, WebSocketDisconnect, HTTPException, status, Query, Request
 from typing import Any, Optional
@@ -92,11 +93,15 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
+        dead_sockets = []
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
             except Exception:
-                pass
+                dead_sockets.append(connection)
+        for dead in dead_sockets:
+            if dead in self.active_connections:
+                self.active_connections.remove(dead)
 
 
 manager = ConnectionManager()
@@ -544,16 +549,22 @@ def _compute_stats_for_user(db: Session, user_id: int) -> dict[str, Any]:
 @app.get("/map-data")
 def get_map_data(db: Session = Depends(get_db), current_user: User = Depends(
         get_current_user)) -> list[dict[str, Any]]:
-    query = db.query(Detection)
+    query = db.query(
+        Detection.id,
+        Detection.latitude,
+        Detection.longitude,
+        Detection.confidence,
+        Detection.object_type,
+        Detection.created_at
+    )
     if not current_user.is_admin:
         query = query.filter(Detection.user_id == current_user.id)
 
     rows = query.order_by(desc(Detection.created_at)).limit(1000).all()
     return [{
-        "id": r.id, "latitude": r.latitude, "longitude": r.longitude,
-        "confidence": r.confidence, "object_type": r.object_type or "pothole",
-        # type: ignore
-        "timestamp": r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else None,
+        "id": r[0], "latitude": r[1], "longitude": r[2],
+        "confidence": r[3], "object_type": r[4] or "pothole",
+        "timestamp": r[5].strftime("%Y-%m-%d %H:%M:%S") if r[5] else None,
     } for r in rows]
 
 
@@ -594,7 +605,7 @@ async def detect_anomalies(
     potholes = []
     if model_pothole is not None:
         print("[DETECTION] Running pothole model...")
-        res_pothole = model_pothole.predict(img, conf=yolo_conf, verbose=False)
+        res_pothole = await run_in_threadpool(model_pothole.predict, img, conf=yolo_conf, verbose=False)
         for r in res_pothole:
             if r.boxes is None:
                 continue
@@ -609,7 +620,7 @@ async def detect_anomalies(
     objects = []
     if model_general is not None:
         print("[DETECTION] Running general object model...")
-        res_general = model_general.predict(img, conf=yolo_conf, verbose=False)
+        res_general = await run_in_threadpool(model_general.predict, img, conf=yolo_conf, verbose=False)
         for r in res_general:
             if r.boxes is None:
                 continue
@@ -631,7 +642,7 @@ async def detect_anomalies(
     infra_detections: list[dict[str, Any]] = []
     if model_multi is not None:
         print("[DETECTION] Running multi-class infrastructure model...")
-        res_multi = model_multi.predict(img, conf=yolo_conf, verbose=False)
+        res_multi = await run_in_threadpool(model_multi.predict, img, conf=yolo_conf, verbose=False)
         for r in res_multi:
             if r.boxes is None:
                 continue
@@ -994,23 +1005,18 @@ def get_admin_stats(db: Session = Depends(get_db),
     """Comprehensive stats for the Admin Console with safe SQL execution."""
     try:
         total_detections = db.query(func.count(Detection.id)).scalar() or 0
-        total_reports = db.query(func.count(Report.id)).scalar() or 0
         total_users = db.query(func.count(User.id)).scalar() or 0
         total_work_orders = db.query(func.count(WorkOrder.id)).scalar() or 0
 
-        pending_reports = db.query(
-            func.count(
-                Report.id)).filter(
-            Report.status == "Pending").scalar() or 0
-        resolved_reports = db.query(
-            func.count(
-                Report.id)).filter(
-            Report.status == "Resolved").scalar() or 0
-
-        # Safe today count using standard timestamp comparison
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        today_reports = db.query(func.count(Report.id)).filter(
-            Report.timestamp >= today_start).scalar() or 0
+        report_aggregates = db.query(
+            func.count(Report.id),
+            func.coalesce(func.sum(case((Report.status == "Pending", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Report.status == "Resolved", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Report.timestamp >= today_start, 1), else_=0)), 0)
+        ).first()
+
+        total_reports, pending_reports, resolved_reports, today_reports = report_aggregates or (0, 0, 0, 0)
 
         return {
             "total": int(total_reports),

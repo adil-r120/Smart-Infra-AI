@@ -312,8 +312,13 @@ const Dashboard: React.FC = () => {
         };
 
         const interval = setInterval(() => {
-            fetchStats(); fetchAlerts(); fetchMapData();
-        }, 15000); // poll every 15s so notifications appear promptly
+            fetchStats(); 
+            fetchAlerts();
+            const currentTab = localStorage.getItem("si_active_tab");
+            if (currentTab === "Map" || currentTab === "Dashboard") {
+                fetchMapData();
+            }
+        }, 15000); // poll stats & alerts every 15s; only refresh heavy map coordinates when map view is active
 
         return () => {
             clearInterval(interval);
