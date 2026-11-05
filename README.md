@@ -90,7 +90,7 @@ docker-compose up --build -d
 ### Accessing Services
 - 🖥️ **Command Center & HUD (Frontend):** [http://localhost](http://localhost) (or [http://localhost:5173](http://localhost:5173))
 - 📡 **Interactive API Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
-- 🗄️ **Database Service:** `localhost:3306` (Credentials and database name configured privately in `.env`)
+- 🗄️ **Database Service:** `localhost:3306`
 
 ### Inspecting Logs & Managing Containers
 ```powershell
