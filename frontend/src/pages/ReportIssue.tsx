@@ -244,7 +244,15 @@ const ReportIssue: React.FC<ReportIssueProps> = ({ onReturn, initialView = "form
                 errorMsg = err.message;
             }
 
-            setErrors(prev => ({ ...prev, description: `Submission failed: ${errorMsg}` }));
+            if (errorMsg.includes("AI Verification Failed")) {
+                setErrors(prev => ({ 
+                    ...prev, 
+                    file: errorMsg,
+                    description: `Submission rejected: ${errorMsg}` 
+                }));
+            } else {
+                setErrors(prev => ({ ...prev, description: `Submission failed: ${errorMsg}` }));
+            }
         } finally {
             setLoading(false);
         }

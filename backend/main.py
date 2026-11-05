@@ -1226,6 +1226,9 @@ async def create_report(
     current_user: User = Depends(get_current_user)
 ):
     img_name = None
+    detected_issue_str = None
+    max_pothole_conf = 0.0
+
     if image and image.filename:
         # 1. Enforce strict extension whitelist (prevents script/executable uploads)
         original_ext = os.path.splitext(image.filename)[1].lower()
@@ -1265,6 +1268,113 @@ async def create_report(
                     )
                 buffer.write(chunk)
 
+        # 4. AI Gatekeeper: Validate that the uploaded photo depicts real infrastructure defects.
+        # Discards fake, prank, selfie, or indoor spam uploads immediately before notifying Admin.
+        try:
+            img_cv = cv2.imread(destination_path)
+            if img_cv is None:
+                if os.path.exists(destination_path):
+                    os.unlink(destination_path)
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid or unreadable image file. Please upload a clear JPG, PNG, or WebP photo."
+                )
+
+            model_pothole, model_general, model_multi = get_yolo_models()
+            yolo_conf = float(os.getenv("DETECTION_THRESHOLD", "0.20"))
+            # For citizen report triage, use a balanced threshold (0.18) so legitimate road damage is never missed
+            verify_conf = max(0.15, min(yolo_conf, 0.22))
+
+            cat_lower = (report_type or "").lower().strip()
+            is_pothole_cat = any(k in cat_lower for k in ["pothole", "road", "crack", "asphalt", "pavement", "street_hazard", "hazard"])
+
+            if is_pothole_cat:
+                pothole_detections = []
+                if model_pothole is not None:
+                    res_p = model_pothole.predict(img_cv, conf=verify_conf, verbose=False)
+                    for r in res_p:
+                        if r.boxes is not None:
+                            for b in r.boxes:
+                                pothole_detections.append(float(b.conf[0]))
+
+                if model_multi is not None:
+                    res_m = model_multi.predict(img_cv, conf=verify_conf, verbose=False)
+                    for r in res_m:
+                        if r.boxes is not None:
+                            for b in r.boxes:
+                                cls_id = int(b.cls[0])
+                                if INFRA_CLASSES.get(cls_id) == "pothole":
+                                    pothole_detections.append(float(b.conf[0]))
+
+                if not pothole_detections:
+                    if os.path.exists(destination_path):
+                        os.unlink(destination_path)
+                    print(f"[REPORT TRIAGE] Discarded fake/empty pothole report by user {current_user.id}: 0 defects found.")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="AI Verification Failed: No pothole or road surface damage was detected in this photo. Please upload a clear photo of the actual road hazard."
+                    )
+
+                max_pothole_conf = max(pothole_detections)
+                detected_issue_str = f"Pothole Detected ({max_pothole_conf:.0%} Confidence)"
+                if max_pothole_conf >= 0.70 and priority_level in ("Low", "Medium"):
+                    priority_level = "High"
+
+            else:
+                # Non-pothole municipal category (broken streetlight, garbage, etc.)
+                # Check for obvious non-infrastructure content (pure selfies or indoor household spam)
+                SPAM_INDOOR_CLASSES = {15, 16, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72}
+                img_h, img_w = img_cv.shape[:2]
+                total_area = float(img_h * img_w) if (img_h and img_w) else 1.0
+
+                has_selfie = False
+                has_indoor_spam = False
+                has_outdoor_context = False
+
+                if model_general is not None:
+                    res_gen = model_general.predict(img_cv, conf=0.35, verbose=False)
+                    for r in res_gen:
+                        if r.boxes is not None:
+                            for b in r.boxes:
+                                cls_id = int(b.cls[0])
+                                x1, y1, x2, y2 = [float(v) for v in b.xyxy[0]]
+                                box_area = (x2 - x1) * (y2 - y1)
+
+                                if cls_id == 0 and (box_area / total_area) > 0.35:
+                                    has_selfie = True
+                                elif cls_id in SPAM_INDOOR_CLASSES:
+                                    has_indoor_spam = True
+                                elif cls_id in {2, 3, 5, 7, 9, 11}:
+                                    has_outdoor_context = True
+
+                has_garbage = False
+                if model_multi is not None and "garbage" in cat_lower:
+                    res_m = model_multi.predict(img_cv, conf=verify_conf, verbose=False)
+                    for r in res_m:
+                        if r.boxes is not None:
+                            for b in r.boxes:
+                                if INFRA_CLASSES.get(int(b.cls[0])) == "garbage":
+                                    has_garbage = True
+
+                if "garbage" in cat_lower and has_garbage:
+                    detected_issue_str = "Garbage / Waste Accumulation Verified"
+                elif (has_selfie or has_indoor_spam) and not has_outdoor_context:
+                    if os.path.exists(destination_path):
+                        os.unlink(destination_path)
+                    print(f"[REPORT TRIAGE] Discarded spam/selfie report by user {current_user.id}: Indoor/selfie detected.")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="AI Verification Failed: The uploaded image appears to be a personal photo or indoor object rather than public infrastructure damage. Please upload a clear photo of the municipal issue."
+                    )
+                else:
+                    detected_issue_str = f"Infrastructure Issue ({report_type.replace('_', ' ').title()})"
+
+        except HTTPException:
+            raise
+        except Exception as ai_gate_err:
+            print(f"[REPORT TRIAGE WARNING] AI validation encountered an issue: {ai_gate_err}. Permitting safe fallback.")
+            detected_issue_str = detected_issue_str or f"Municipal Report ({report_type})"
+
     new_report = Report(
         problem_type=report_type,
         description=description,
@@ -1272,6 +1382,7 @@ async def create_report(
         image_path=img_name,
         status="Pending",
         priority_level=priority_level,
+        deterioration_score=round(max_pothole_conf * 100, 1) if max_pothole_conf > 0 else 0.0,
         timestamp=datetime.now(),
         user_id=current_user.id
     )
@@ -1282,9 +1393,16 @@ async def create_report(
         "problem_type": report_type,
         "location": location,
         "priority_level": priority_level,
-        "user_id": current_user.id
+        "user_id": current_user.id,
+        "image_path": img_name,
+        "detected_issue": detected_issue_str or report_type
     })
-    return {"status": "success", "id": new_report.id}
+    return {
+        "status": "success",
+        "id": new_report.id,
+        "report_id": new_report.id,
+        "detected_issue": detected_issue_str or report_type
+    }
 
 
 @app.get("/reports")
