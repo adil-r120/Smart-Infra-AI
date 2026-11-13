@@ -1,7 +1,7 @@
 # 📡 Smart-Infra: AI Infrastructure Monitoring System
 
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/Tests-14%20Passed-brightgreen)](backend/tests/)
+[![Tests](https://img.shields.io/badge/Tests-21%20Passed-brightgreen)](backend/tests/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)](https://react.dev/)
@@ -35,6 +35,7 @@
 - 🛡️ **AI Pre-Submission Triage Gatekeeper**: Real-time computer vision filter in the citizen reporting pipeline. Evaluates uploaded damage photos with YOLO to reject fake, prank, selfie, or indoor spam uploads before they reach the database or municipal admins.
 - 🗺️ **Geospatial Monitoring Map**: Interactive GIS mapping with severity-coded pins, live coordinate tracking, and hazard density heatmaps with lightweight projection queries.
 - 📱 **Citizen Reporting & Tracking Portal**: Public interface for citizens to upload damage photos, geotag incidents, receive neural classification badges with confidence scores, and track maintenance progress in real time.
+- 🧠 **Civil Engineering RAG Copilot**: Retrieval-Augmented Generation engine grounded in official road maintenance standards (IRC:82-2015, ASTM D6690, MUTCD traffic safety). Automatically synthesizes technical Standard Operating Procedures (SOPs), material specifications (VG-30 bitumen, tack coat RS-1), compaction requirements, and statutory SLA timelines for work orders with exact manual citations.
 - 👷 **Municipal Admin Console & Work Orders**: Role-based officer portal to triage reports, dispatch field workers, assign tasks, log repair notes, and resolve work orders.
 - 🤖 **Urban AI Advisor**: LLM-powered municipal copilot delivering maintenance prioritization, budget estimation, and repair strategy suggestions.
 - 📡 **Live Telemetry & WebSocket Streams**: Low-latency bi-directional WebSocket feed broadcasting detection events, live FPS, and road integrity scores directly to the HUD with automatic dead-connection pruning.
@@ -47,6 +48,7 @@
 | Domain | Technologies |
 | :--- | :--- |
 | **AI & Computer Vision** | YOLOv8 (Ultralytics), OpenVINO (Intel CPU Optimized), OpenCV, SciPy (Centroid Tracker), PyTorch |
+| **RAG & Knowledge Engine** | In-Memory Vector Store, TF-IDF / BM25 Cosine Similarity, Grounded Civil Standards (IRC:82, MUTCD, Bylaws) |
 | **Backend Services** | Python 3.10+, FastAPI, SQLAlchemy ORM, PyMySQL, Pydantic v2, Uvicorn, WebSockets, Starlette Threadpools |
 | **Database** | MySQL 8.0 (Docker) / SQLite (Fallback) with automatic schema migration |
 | **Frontend HUD** | React 18, Vite, TypeScript, Lucide Icons, Leaflet / GIS Maps, Chart.js / Recharts |
@@ -225,14 +227,17 @@ Smart-Infra/
 ├── backend/                    # Python FastAPI AI Brain
 │   ├── ai/                     # YOLOv8 models (.pt, .xml), tracker, and logic
 │   ├── detections/             # Saved detection frames and snapshots
+│   ├── knowledge_base/         # Civil engineering standards (IRC:82, ASTM D6690, MUTCD)
 │   ├── logs/                   # System and inference logs
 │   ├── uploads/                # Citizen-uploaded damage photos
-│   ├── tests/                  # Automated pytest test suite (14 passing tests)
+│   ├── tests/                  # Automated pytest test suite (21 passing tests)
 │   │   ├── conftest.py         # In-memory test fixtures & client setup
 │   │   ├── test_auth_api.py    # Authentication & RBAC tests
 │   │   ├── test_database_crud.py # Detections & work order tests
 │   │   ├── test_reports_triage.py # Fake report rejection & triage tests
-│   │   └── test_ai_inference.py # YOLO loading & privacy blurring tests
+│   │   ├── test_ai_inference.py # YOLO loading & privacy blurring tests
+│   │   └── test_rag_copilot.py # RAG indexing, retrieval & SOP tests
+│   ├── rag_engine.py           # Vector retrieval & civil engineering RAG engine
 │   ├── database.py             # SQLAlchemy models and connection retry logic
 │   ├── main.py                 # REST API endpoints, AI triage, and WebSocket handlers
 │   ├── models.py               # 8 SQLAlchemy relational data models

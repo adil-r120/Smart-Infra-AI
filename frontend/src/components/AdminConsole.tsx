@@ -150,6 +150,80 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ alerts: initialAlerts = [],
 
     const [isBriefingOpen, setIsBriefingOpen] = useState(false);
 
+    // RAG Copilot State
+    const [copilotModalOpen, setCopilotModalOpen] = useState(false);
+    const [isGeneratingSop, setIsGeneratingSop] = useState(false);
+    const [generatedSop, setGeneratedSop] = useState<any | null>(null);
+    const [copilotChatQuery, setCopilotChatQuery] = useState("");
+    const [copilotChatHistory, setCopilotChatHistory] = useState<Array<{ sender: 'user' | 'ai'; text: string; citations?: any[] }>>([]);
+    const [isCopilotChatting, setIsCopilotChatting] = useState(false);
+    const [kbDocuments, setKbDocuments] = useState<any[]>([]);
+
+    const handleGenerateSop = async (hazardType = "Pothole", severity = newWoPriority, notes = newWoNotes) => {
+        setIsGeneratingSop(true);
+        try {
+            const payload: any = {
+                hazard_type: hazardType,
+                severity: severity,
+                notes: notes
+            };
+            const detIdNum = parseInt(newWoDetectionId, 10);
+            if (!isNaN(detIdNum)) {
+                payload.detection_id = detIdNum;
+            }
+            const res = await axios.post(`${API_BASE}/copilot/generate-sop`, payload, { headers: authHeaders });
+            setGeneratedSop(res.data);
+            showToast("Civil Engineering SOP generated via RAG!", "success");
+        } catch (err: any) {
+            showToast(err.response?.data?.detail || "Failed to generate SOP", "error");
+        } finally {
+            setIsGeneratingSop(false);
+        }
+    };
+
+    const handleApplySopToNotes = () => {
+        if (generatedSop && generatedSop.work_order_text) {
+            setNewWoNotes(generatedSop.work_order_text);
+            showToast("SOP inserted into Work Order Scope!", "success");
+        }
+    };
+
+    const handleSendCopilotChat = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const q = copilotChatQuery.trim();
+        if (!q || isCopilotChatting) return;
+
+        setCopilotChatHistory(prev => [...prev, { sender: 'user', text: q }]);
+        setCopilotChatQuery("");
+        setIsCopilotChatting(true);
+
+        try {
+            const res = await axios.post(`${API_BASE}/copilot/chat`, { query: q }, { headers: authHeaders });
+            setCopilotChatHistory(prev => [
+                ...prev,
+                { sender: 'ai', text: res.data.answer, citations: res.data.citations }
+            ]);
+        } catch (err: any) {
+            setCopilotChatHistory(prev => [
+                ...prev,
+                { sender: 'ai', text: "Error querying civil engineering knowledge base: " + (err.response?.data?.detail || err.message) }
+            ]);
+        } finally {
+            setIsCopilotChatting(false);
+        }
+    };
+
+    const handleFetchKbDocs = async () => {
+        try {
+            const res = await axios.get(`${API_BASE}/copilot/knowledge-base`, { headers: authHeaders });
+            if (res.data && res.data.documents) {
+                setKbDocuments(res.data.documents);
+            }
+        } catch (e) {
+            console.error("Failed to fetch knowledge base", e);
+        }
+    };
+
     // Toast Dispatcher
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
         const id = Date.now() + Math.random();
@@ -687,6 +761,24 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ alerts: initialAlerts = [],
                             >
                                 <Sparkles size={16} />
                                 <span>AI Strategic Briefing</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className="admin-action-btn-ai"
+                                style={{
+                                    background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(99, 102, 241, 0.18))',
+                                    border: '1px solid rgba(56, 189, 248, 0.4)',
+                                    color: '#38bdf8'
+                                }}
+                                onClick={() => {
+                                    handleFetchKbDocs();
+                                    setCopilotModalOpen(true);
+                                }}
+                                title="Open Civil Engineering SOP Knowledge Base & Interactive Copilot"
+                            >
+                                <Wrench size={16} />
+                                <span>AI Engineering Copilot (RAG)</span>
                             </button>
 
                             <button
@@ -2238,10 +2330,97 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ alerts: initialAlerts = [],
                                         </div>
 
                                         <div className="admin-modal-field">
-                                            <label className="admin-modal-label">Work Order Instructions / Scope</label>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <label className="admin-modal-label" style={{ marginBottom: 0 }}>Work Order Instructions / Scope</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleGenerateSop()}
+                                                    disabled={isGeneratingSop}
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        padding: '5px 12px',
+                                                        borderRadius: '8px',
+                                                        background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                                                        border: 'none',
+                                                        color: '#fff',
+                                                        fontSize: '0.78rem',
+                                                        fontWeight: 700,
+                                                        cursor: isGeneratingSop ? 'not-allowed' : 'pointer',
+                                                        boxShadow: '0 2px 8px rgba(56, 189, 248, 0.3)'
+                                                    }}
+                                                >
+                                                    <Sparkles size={13} />
+                                                    <span>{isGeneratingSop ? 'Retrieving SOP...' : '⚡ Auto-Generate SOP with AI (RAG)'}</span>
+                                                </button>
+                                            </div>
+
+                                            {generatedSop && (
+                                                <div style={{
+                                                    marginBottom: '12px',
+                                                    padding: '12px',
+                                                    borderRadius: '10px',
+                                                    background: 'rgba(14, 165, 233, 0.08)',
+                                                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                                                    fontSize: '0.82rem',
+                                                    color: '#f1f5f9'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                        <span style={{ fontWeight: 800, color: '#38bdf8' }}>{generatedSop.title}</span>
+                                                        <span style={{
+                                                            fontSize: '0.7rem',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '6px',
+                                                            background: 'rgba(16, 185, 129, 0.2)',
+                                                            color: '#34d399',
+                                                            fontWeight: 700
+                                                        }}>
+                                                            SLA: {generatedSop.sla_hours}h
+                                                        </span>
+                                                    </div>
+                                                    {generatedSop.citations && generatedSop.citations.length > 0 && (
+                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '6px 0 10px 0' }}>
+                                                            {generatedSop.citations.map((c: any, idx: number) => (
+                                                                <span key={idx} style={{
+                                                                    fontSize: '0.68rem',
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '4px',
+                                                                    background: 'rgba(255,255,255,0.06)',
+                                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                                    color: '#94a3b8'
+                                                                }}>
+                                                                    📜 {c.document} ({Math.round(c.score * 100)}% match)
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleApplySopToNotes}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            padding: '6px 12px',
+                                                            borderRadius: '6px',
+                                                            background: '#0284c7',
+                                                            border: 'none',
+                                                            color: '#fff',
+                                                            fontWeight: 700,
+                                                            fontSize: '0.76rem',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        <Check size={13} />
+                                                        <span>Insert SOP into Scope</span>
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             <textarea
                                                 className="admin-modal-textarea"
-                                                rows={3}
+                                                rows={4}
                                                 value={newWoNotes}
                                                 onChange={(e) => setNewWoNotes(e.target.value)}
                                                 placeholder="Provide scope of work, needed asphalt/machinery, and safety precautions..."
@@ -2363,7 +2542,184 @@ const AdminConsole: React.FC<AdminConsoleProps> = ({ alerts: initialAlerts = [],
                     )}
 
                     {/* ═══════════════════════════════════════════════════════════
-                        MODAL 6: AI STRATEGIC BRIEFING MODAL
+                        MODAL 6: AI ENGINEERING COPILOT (RAG) MODAL
+                    ═══════════════════════════════════════════════════════════ */}
+                    {copilotModalOpen && (
+                        <div className="admin-modal-overlay animate-in" style={{ zIndex: 9999 }}>
+                            <div className="admin-modal-card" style={{ maxWidth: '820px', width: '92%' }}>
+                                <div className="admin-modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '18px 24px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div className="admin-modal-icon-badge" style={{ background: 'rgba(14, 165, 233, 0.15)', color: '#38bdf8' }}>
+                                            <Wrench size={22} />
+                                        </div>
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                Civil Engineering Copilot
+                                                <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '99px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                                                    RAG KNOWLEDGE BASE
+                                                </span>
+                                            </h3>
+                                            <p style={{ margin: '3px 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted, #94a3b8)' }}>
+                                                Grounded in official municipal road repair codes (IRC:82, ASTM D6690, MUTCD & Bylaws)
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="admin-detail-close-btn"
+                                        onClick={() => setCopilotModalOpen(false)}
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
+
+                                <div className="admin-modal-body" style={{ maxHeight: '68vh', overflowY: 'auto', padding: '20px 24px' }}>
+                                    {/* Indexed Manuals Row */}
+                                    <div style={{ marginBottom: '18px' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', marginBottom: '8px' }}>
+                                            Active Ingested Engineering Standards (4 Documents Indexed)
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+                                            {[
+                                                { title: 'IRC:82 Bituminous Surfaces', code: 'IRC:82-2015', cat: 'Pothole SOP' },
+                                                { title: 'Crack Sealing & Slurry', code: 'ASTM D6690', cat: 'Crack SOP' },
+                                                { title: 'Drainage & Pipe Bursts', code: 'GSB / Trenching', cat: 'Water SOP' },
+                                                { title: 'Work Zone Safety & SLAs', code: 'MUTCD / IRC:SP:55', cat: 'Safety / SLA' }
+                                            ].map((doc, i) => (
+                                                <div key={i} style={{
+                                                    padding: '8px 12px',
+                                                    borderRadius: '8px',
+                                                    background: 'rgba(255,255,255,0.03)',
+                                                    border: '1px solid rgba(255,255,255,0.06)',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '2px'
+                                                }}>
+                                                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f1f5f9' }}>{doc.title}</span>
+                                                    <span style={{ fontSize: '0.68rem', color: '#38bdf8' }}>{doc.code} • {doc.cat}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Suggestions Chips */}
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: '6px' }}>Quick Engineering Inquiries:</div>
+                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                            {[
+                                                "What is the tack coat rate for pothole repair?",
+                                                "How to fix potholes during monsoon (wet weather)?",
+                                                "What is the procedure for alligator fatigue cracking?",
+                                                "What is the municipal SLA for critical road hazards?"
+                                            ].map((q, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCopilotChatQuery(q);
+                                                    }}
+                                                    style={{
+                                                        fontSize: '0.74rem',
+                                                        padding: '4px 10px',
+                                                        borderRadius: '6px',
+                                                        background: 'rgba(56, 189, 248, 0.08)',
+                                                        border: '1px solid rgba(56, 189, 248, 0.2)',
+                                                        color: '#e2e8f0',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    {q}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Q&A Chat Log */}
+                                    <div style={{
+                                        minHeight: '180px',
+                                        maxHeight: '280px',
+                                        overflowY: 'auto',
+                                        background: 'rgba(0,0,0,0.25)',
+                                        borderRadius: '12px',
+                                        border: '1px solid rgba(255,255,255,0.06)',
+                                        padding: '14px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '12px',
+                                        marginBottom: '16px'
+                                    }}>
+                                        {copilotChatHistory.length === 0 ? (
+                                            <div style={{ margin: 'auto', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                                                Ask any technical question to search the ingested municipal road repair manuals.
+                                            </div>
+                                        ) : (
+                                            copilotChatHistory.map((m, i) => (
+                                                <div key={i} style={{
+                                                    alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
+                                                    maxWidth: '88%',
+                                                    padding: '10px 14px',
+                                                    borderRadius: '12px',
+                                                    background: m.sender === 'user' ? '#0284c7' : 'rgba(255,255,255,0.05)',
+                                                    border: m.sender === 'user' ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                                                    color: '#f8fafc',
+                                                    fontSize: '0.86rem',
+                                                    lineHeight: 1.5,
+                                                    whiteSpace: 'pre-wrap'
+                                                }}>
+                                                    {m.text}
+                                                    {m.citations && m.citations.length > 0 && (
+                                                        <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                            {m.citations.map((c: any, cidx: number) => (
+                                                                <span key={cidx} style={{ fontSize: '0.68rem', color: '#38bdf8' }}>
+                                                                    📜 {c.document} ({Math.round(c.score * 100)}% match)
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                        {isCopilotChatting && (
+                                            <div style={{ fontSize: '0.8rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <RefreshCw size={12} className="animate-spin" />
+                                                <span>Searching civil engineering vector index...</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Question Input Form */}
+                                    <form onSubmit={handleSendCopilotChat} style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                            type="text"
+                                            className="admin-modal-input"
+                                            value={copilotChatQuery}
+                                            onChange={(e) => setCopilotChatQuery(e.target.value)}
+                                            placeholder="Ask a technical question regarding materials, IRC standards, or safety..."
+                                            style={{ margin: 0, flex: 1 }}
+                                        />
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary"
+                                            disabled={isCopilotChatting || !copilotChatQuery.trim()}
+                                            style={{ padding: '0 18px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                        >
+                                            <Sparkles size={14} />
+                                            <span>Query RAG</span>
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div className="admin-modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '14px 24px' }}>
+                                    <button type="button" className="btn btn-ghost" onClick={() => setCopilotModalOpen(false)}>
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═══════════════════════════════════════════════════════════
+                        MODAL 7: AI STRATEGIC BRIEFING MODAL
                     ═══════════════════════════════════════════════════════════ */}
                     <UrbanAdvisorModal
                         isOpen={isBriefingOpen}

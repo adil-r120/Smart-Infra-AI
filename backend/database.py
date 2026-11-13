@@ -11,6 +11,8 @@ load_dotenv(_env_path)
 import time
 
 DATABASE_URL = os.getenv('DATABASE_URL')
+if os.getenv("TESTING") == "1":
+    DATABASE_URL = "sqlite:///:memory:"
 
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL must be set in .env or environment variables.")

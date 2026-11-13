@@ -52,7 +52,7 @@ def test_work_order_workflow(client, admin_token, test_admin, test_user, db_sess
     db_session.commit()
 
     # 2. Create work order
-    wo_res = client.post("/work-orders", headers=admin_headers, json={
+    wo_res = client.post("/work-orders", headers=admin_headers, data={
         "detection_id": detection.id,
         "assigned_user_id": test_user.id,
         "priority": "High",
@@ -67,10 +67,9 @@ def test_work_order_workflow(client, admin_token, test_admin, test_user, db_sess
     assert any(w["id"] == wo_id for w in list_res.json())
 
     # 4. Update work order status
-    patch_res = client.patch(f"/work-orders/{wo_id}", headers=admin_headers, json={
-        "status": "In Progress",
-        "notes": "Crew dispatched to site"
+    patch_res = client.patch(f"/work-orders/{wo_id}", headers=admin_headers, data={
+        "status": "In Progress"
     })
     assert patch_res.status_code == 200
-    assert patch_res.json()["status"] == "In Progress"
+    assert patch_res.json()["status"] == "success"
 

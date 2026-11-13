@@ -1,4 +1,3 @@
-from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
 
@@ -79,8 +78,8 @@ class CentroidTracker():
             # compute the distance between each pair of object
             # centroids and input centroids, respectively -- our
             # goal will be to match an input centroid to an existing
-            # object centroid
-            D = dist.cdist(np.array(objectCentroids), inputCentroids)
+            # object centroid using vectorized Euclidean distance
+            D = np.linalg.norm(np.array(objectCentroids)[:, np.newaxis] - inputCentroids, axis=2)
 
             # in order to perform this matching we must (1) find the
             # smallest value in each row and then (2) sort the row

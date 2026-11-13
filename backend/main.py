@@ -10,6 +10,8 @@ from si_auth import (
 )
 from tracker import CentroidTracker
 from briefing_engine import generate_live_briefing
+from rag_engine import CivilEngineeringRAG
+from pydantic import BaseModel
 from models import Detection, Report, User, WorkOrder, AuditLog, AdminInviteToken, EdgeMetric, Notification
 from database import SessionLocal, init_db
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,8 +68,9 @@ async def lifespan(_app: FastAPI):
     # Ensure necessary directories exist
     os.makedirs(os.path.join(_script_dir, "uploads"), exist_ok=True)
     os.makedirs(os.path.join(_script_dir, "detections"), exist_ok=True)
-    # Keep schema up to date for security tables.
-    init_db()
+    # Keep schema up to date for security tables (skip in test isolation mode)
+    if os.getenv("TESTING") != "1":
+        init_db()
     yield
 
 # Single canonical FastAPI instance with lifespan
@@ -997,6 +1000,97 @@ async def update_work_order(
         order.completed_at = datetime.now()
     db.commit()
     return {"status": "success"}
+
+
+# ── RAG Copilot Endpoints ───────────────────────────────────────────────
+
+class CopilotSOPRequest(BaseModel):
+    detection_id: Optional[int] = None
+    hazard_type: str = "Pothole"
+    severity: str = "High"
+    notes: Optional[str] = ""
+    location: Optional[str] = ""
+
+
+class CopilotChatRequest(BaseModel):
+    query: str
+
+
+@app.post("/copilot/generate-sop")
+def generate_copilot_sop(
+    payload: CopilotSOPRequest,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user)
+):
+    """
+    RAG-powered civil engineering copilot for automated work order SOP generation.
+    Retrieves engineering clauses from IRC:82 and municipal bylaws to synthesize repair protocols.
+    """
+    hazard_type = payload.hazard_type
+    severity = payload.severity
+    notes = payload.notes or ""
+    location = payload.location or ""
+
+    if payload.detection_id:
+        det = db.query(Detection).filter(Detection.id == payload.detection_id).first()
+        if det:
+            if det.object_type:
+                hazard_type = det.object_type
+            if det.latitude and det.longitude:
+                location = f"{det.latitude:.5f}, {det.longitude:.5f}"
+
+    rag = CivilEngineeringRAG.get_instance()
+    sop_data = rag.generate_work_order_sop(
+        hazard_type=hazard_type,
+        severity=severity,
+        notes=notes,
+        location=location
+    )
+    return sop_data
+
+
+@app.post("/copilot/chat")
+def copilot_chat(
+    payload: CopilotChatRequest,
+    _current_user: User = Depends(get_current_user)
+):
+    """Answers municipal civil engineering questions grounded in indexed standards."""
+    if not payload.query or not payload.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    rag = CivilEngineeringRAG.get_instance()
+    return rag.chat_query(payload.query.strip())
+
+
+@app.get("/copilot/knowledge-base")
+def get_copilot_knowledge_base(_current_user: User = Depends(get_current_user)):
+    """Returns metadata for indexed municipal civil engineering knowledge base."""
+    rag = CivilEngineeringRAG.get_instance()
+    return {
+        "status": "active",
+        "chunks_indexed": len(rag.vector_store.chunks),
+        "documents": [
+            {
+                "file": "irc_82_pothole_rectification.md",
+                "title": "IRC:82-2015 Code of Practice for Maintenance of Bituminous Surfaces",
+                "category": "Potholes & Patching"
+            },
+            {
+                "file": "crack_sealing_and_resurfacing.md",
+                "title": "Asphalt Crack Sealing & Structural Resurfacing SOP",
+                "category": "Cracks & Slurry Seals"
+            },
+            {
+                "file": "subsurface_drainage_and_leakage.md",
+                "title": "Municipal Drainage, Water Leakage & Trench Reinstatement SOP",
+                "category": "Drainage & Trenching"
+            },
+            {
+                "file": "work_order_sla_and_safety_bylaws.md",
+                "title": "Work Order SLA, Crew Safety & Traffic Cordon Bylaws",
+                "category": "Safety & SLAs"
+            }
+        ]
+    }
 
 
 @app.get("/admin/stats")

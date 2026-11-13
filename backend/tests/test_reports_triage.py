@@ -28,16 +28,20 @@ def test_report_real_pothole_acceptance(client, user_token):
     
     # Find a real sample pothole image from uploads or create one with dark contour
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sample_path = os.path.join(backend_dir, "uploads", "report_20261025_185316_pothole.jpg")
+    candidates = [
+        os.path.join(backend_dir, "uploads", "report_20260603_224217_download.jpg"),
+        os.path.join(backend_dir, "uploads", "report_20261025_185316_pothole.jpg")
+    ]
+    sample_path = next((p for p in candidates if os.path.exists(p)), None)
     
-    if os.path.exists(sample_path):
+    if sample_path:
         with open(sample_path, "rb") as f:
             img_bytes = f.read()
     else:
         # Fallback test image
         img_bytes = b"fake"
 
-    if os.path.exists(sample_path):
+    if sample_path:
         files = {"image": ("real_pothole.jpg", img_bytes, "image/jpeg")}
         data = {
             "report_type": "pothole",

@@ -1,4 +1,5 @@
 import os
+os.environ["TESTING"] = "1"
 import sys
 import pytest
 from sqlalchemy import create_engine
@@ -11,7 +12,7 @@ if backend_dir not in sys.path:
 
 from database import Base
 from main import app, get_db
-from si_auth import hash_password
+from si_auth import hash_password, get_db as auth_get_db
 from models import User, Detection, Report, WorkOrder
 
 # Isolated in-memory SQLite database for test execution
@@ -48,6 +49,7 @@ def client(db_session):
             pass
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[auth_get_db] = override_get_db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
