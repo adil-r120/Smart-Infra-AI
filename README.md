@@ -198,10 +198,22 @@ The core YOLOv8 model was custom-trained and evaluated on municipal asphalt dama
 | Metric | Score | Note |
 | :--- | :--- | :--- |
 | **mAP@50** | `66.50%` | Mean Average Precision at IoU 0.50 |
-| **Precision** | `65.92%` | Low false-positive rate on street markings |
-| **Recall** | `62.15%` | Robust detection under shadowed conditions |
-| **F1-Score** | `~64.00%` | Harmonic balance between precision & recall |
+| **mAP@50-95** | `38.16%` | COCO-standard comprehensive multi-IoU threshold evaluation |
+| **Precision (P)** | `65.92%` | Low false-positive rate on street markings and shadows |
+| **Recall (R)** | `62.15%` | Robust detection under overcast, shadowed, and wet conditions |
+| **F1-Score** | `63.98%` | Harmonic balance between precision and recall |
 | **Inference Latency** | `~18-28 ms` | OpenVINO CPU mode on Intel Core i5/i7 |
+
+### 📈 Training Epoch Convergence History
+
+| Epoch | Precision | Recall | F1-Score | mAP@50 | mAP@50-95 | Train Box Loss | Val Box Loss |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **1** | 67.53% | 56.93% | 61.78% | 63.67% | 36.51% | 1.5622 | 1.5313 |
+| **2** | 62.13% | 55.80% | 58.79% | 58.70% | 31.29% | 1.4977 | 1.5708 |
+| **3** | 68.95% | 58.24% | 63.14% | 64.48% | 35.65% | 1.5318 | 1.4925 |
+| **4** | 67.35% | 58.77% | 62.77% | 65.31% | 36.48% | 1.4841 | 1.5308 |
+| **5** | 66.72% | 56.91% | 61.43% | 65.42% | 37.72% | 1.4743 | 1.4968 |
+| **6 (Best)** | **65.92%** | **62.15%** | **63.98%** | **66.50%** | **38.16%** | **1.4421** | **1.4391** |
 
 ---
 
