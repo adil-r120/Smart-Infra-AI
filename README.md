@@ -9,11 +9,30 @@
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com/)
 
 > [!IMPORTANT]
-> **Next-Generation Urban Surveillance & Infrastructure Governance**: Smart-Infra is an enterprise-grade, AI-driven platform for automated road hazard detection, geospatial tracking, public reporting, and municipal work-order dispatch. It fuses custom-trained YOLOv8 with Intel OpenVINO optimization for high-frame-rate real-time inference on edge and server hardware.
+> **Next-Generation Urban Surveillance & Infrastructure Governance**: Smart-Infra is an enterprise-grade, AI-driven platform built for municipal corporations, public works departments (PWD), and smart city command centers (ICCC). It automates road hazard detection, geospatial tracking, public grievance triage, and statutory civil engineering work-order dispatch. It fuses custom-trained YOLOv8 with Intel OpenVINO optimization for high-frame-rate real-time inference on edge fleets and server hardware.
+
+---
+
+## 🏛️ Government & Public Sector Purpose
+
+Smart-Infra was engineered specifically for **Municipal Corporations, Public Works Departments (PWD), Smart City Command Centers (ICCC), and National Highway Authorities (NHAI / MoRTH / DOTs)**. It bridges the critical operational gap between raw road hazard telemetry and official municipal civil engineering action.
+
+### 🎯 Key Public Sector Challenges Solved
+
+| Government Challenge | Traditional Method | Smart-Infra AI Solution |
+| :--- | :--- | :--- |
+| **Fleet Inspection Costs** | Specialized survey trucks costing **\$150k–\$300k+** that inspect <15% of roads yearly. | **Passive Fleet Scanning**: Mounts on existing garbage trucks, public buses, and patrol cars to continuously scan **100% of municipal roadways** via lightweight edge AI. |
+| **Contractor Oversight & Standards** | Vague work orders causing substandard patches, repeated potholes, and audit failures. | **Statutory RAG Copilot**: Automatically synthesizes formal SOPs grounded in **IRC:82-2015**, **ASTM D6690**, and **MUTCD** bylaws (mandating VG-30 bitumen, RS-1 tack coat, and 98% Proctor compaction). |
+| **Public Grievance Spam** | Citizen complaint queues flooded with selfies, memes, or non-infrastructure images. | **AI Triage Gatekeeper**: Computer vision rejects prank and non-road photos in real time before they reach municipal databases or officer desks. |
+| **SLA Enforcement & Accountability** | Complaints lost in paper files; 14–30 day average repair turnaround. | **Statutory SLA Timers**: Enforces strict municipal deadlines (**Critical 4h**, **High 24h**, **Medium 72h**) with immutable timestamped audit logging. |
+| **Language & Digital Divide** | Citizens face language barriers and complex online forms. | **Multilingual Voice-to-Report**: Speech-to-text reporting supporting **9 regional languages** (Hindi, Marathi, Tamil, Telugu, Kannada, Bengali, English, Spanish) with smart auto-categorization. |
+| **Citizen Privacy Compliance** | Public photos capture bystanders and vehicle registration numbers without consent. | **Automated Privacy Redaction**: Real-time Gaussian blurring on detected faces and license plates ensures full compliance with privacy laws (DPDP Act, GDPR). |
+| **Data Sovereignty** | Reliance on third-party proprietary SaaS platforms. | **100% On-Premise / Sovereign Cloud**: Containerized with Docker for deployment in municipal air-gapped data centers or sovereign government clouds. |
 
 ---
 
 ## 📑 Table of Contents
+- [🏛️ Government & Public Sector Purpose](#️-government--public-sector-purpose)
 - [✨ Key Features](#-key-features)
 - [🛠️ Technology Stack](#️-technology-stack)
 - [🏛️ System Architecture](#️-system-architecture)
@@ -33,6 +52,7 @@
 
 - 🎯 **Real-Time Pothole & Hazard Detection**: Custom-trained YOLOv8 model capable of sub-25ms inference with OpenVINO CPU acceleration.
 - 🛡️ **AI Pre-Submission Triage Gatekeeper**: Real-time computer vision filter in the citizen reporting pipeline. Evaluates uploaded damage photos with YOLO to reject fake, prank, selfie, or indoor spam uploads before they reach the database or municipal admins.
+- 🎙️ **Multilingual Voice-to-Report & AI Dictation**: Hands-free voice reporting supporting 9 regional languages (Hindi, Marathi, Tamil, Telugu, Kannada, Bengali, English, Spanish) with automatic hazard categorization and landmark extraction via the Web Speech API.
 - 🗺️ **Geospatial Monitoring Map**: Interactive GIS mapping with severity-coded pins, live coordinate tracking, and hazard density heatmaps with lightweight projection queries.
 - 📱 **Citizen Reporting & Tracking Portal**: Public interface for citizens to upload damage photos, geotag incidents, receive neural classification badges with confidence scores, and track maintenance progress in real time.
 - 🧠 **Civil Engineering RAG Copilot**: Retrieval-Augmented Generation engine grounded in official road maintenance standards (IRC:82-2015, ASTM D6690, MUTCD traffic safety). Automatically synthesizes technical Standard Operating Procedures (SOPs), material specifications (VG-30 bitumen, tack coat RS-1), compaction requirements, and statutory SLA timelines for work orders with exact manual citations.
