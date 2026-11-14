@@ -1,6 +1,6 @@
 import React from "react";
 import {
-    Home, Calendar, Settings, Map as MapIcon, ShieldAlert,
+    Calendar, Settings, Map as MapIcon, ShieldAlert,
     FileText, Camera, LogOut, Scan, LayoutDashboard, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -32,10 +32,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             { id: "Map", label: "Map", Icon: MapIcon },
         ] : []),
         ...(!user?.is_admin ? [
-            { id: "Home", label: "Home", Icon: Home },
-            { id: "Webcam", label: "Live Feed", Icon: Camera },
-            { id: "Scanner", label: "Upload Issues", Icon: Scan },
             { id: "Report", label: "Report & Track", Icon: FileText },
+            { id: "Scanner", label: "Upload Issues", Icon: Scan },
+            { id: "Webcam", label: "Live Feed", Icon: Camera },
         ] : []),
         { id: "Configuration", label: "Settings", Icon: Settings },
     ];

@@ -14,7 +14,6 @@ import AdminConsole from "../components/AdminConsole";
 import ReportIssue from "./ReportIssue";
 import IntelligenceHub from "../components/IntelligenceHub";
 import MyReports from "../components/MyReports";
-import EditorialHome from "../components/EditorialHome";
 import UrbanAdvisorChat from "../components/UrbanAdvisorChat";
 import { Detection, DetectionResult, DBEntry, Stats } from "../types";
 import { AlertTriangle, X, Activity, Camera, Database, Sun, Moon, RefreshCw, ShieldAlert, Scan, Download, Eye, Crosshair, Radio, Zap, Maximize, Minimize, Trash2, WifiOff, Shield, Bell, Video, Play, Pause, Layers, Menu, Check, Upload, Settings, User as UserIcon, PanelLeftClose, PanelLeftOpen, ChevronUp, LogOut } from "lucide-react";
@@ -79,25 +78,25 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState(() => {
         const saved = localStorage.getItem("si_active_tab");
-        const validTabs = ["Home", "Dashboard", "Scanner", "Map", "History", "Admin", "Report", "MyReports", "Configuration", "Webcam"];
+        const validTabs = ["Dashboard", "Scanner", "Map", "History", "Admin", "Report", "MyReports", "Configuration", "Webcam"];
         if (saved && validTabs.includes(saved)) {
             // Non-admin cannot access admin-only tabs
             if (!user?.is_admin && (saved === "Dashboard" || saved === "Admin" || saved === "History" || saved === "Map")) {
-                return "Home";
+                return "Report";
             }
             // Admin cannot access user-only tabs (Scanner, Webcam, Report, MyReports)
-            if (user?.is_admin && (saved === "Home" || saved === "Scanner" || saved === "Webcam" || saved === "Report" || saved === "MyReports")) {
+            if (user?.is_admin && (saved === "Scanner" || saved === "Webcam" || saved === "Report" || saved === "MyReports")) {
                 return "Dashboard";
             }
             return saved;
         }
-        return user?.is_admin ? "Dashboard" : "Home";
+        return user?.is_admin ? "Dashboard" : "Report";
     });
 
     useEffect(() => {
         if (!user?.is_admin && (activeTab === "Dashboard" || activeTab === "Admin" || activeTab === "History" || activeTab === "Map")) {
-            setActiveTab("Home");
-        } else if (user?.is_admin && (activeTab === "Home" || activeTab === "Scanner" || activeTab === "Webcam" || activeTab === "Report" || activeTab === "MyReports")) {
+            setActiveTab("Report");
+        } else if (user?.is_admin && (activeTab === "Scanner" || activeTab === "Webcam" || activeTab === "Report" || activeTab === "MyReports")) {
             setActiveTab("Dashboard");
         } else {
             localStorage.setItem("si_active_tab", activeTab);
@@ -936,7 +935,7 @@ const Dashboard: React.FC = () => {
     );
 
     return (
-        <div className={`dashboard-root ${theme}-theme ${activeTab === 'Home' && !user?.is_admin ? 'is-home-tab' : ''}`}>
+        <div className={`dashboard-root ${theme}-theme`}>
 
             <header className="top-full-header" style={{ flexShrink: 0, zIndex: 999 }}>
                 <div className="header-left-group">
@@ -1204,7 +1203,7 @@ const Dashboard: React.FC = () => {
                 />
 
                 <div className="main-content-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-                    <div className={`tab-content-wrapper ${activeTab === "Home" && !user?.is_admin ? "home-tab-wrapper" : ""}`}>
+                    <div className="tab-content-wrapper">
                         {activeTab === "Dashboard" && user?.is_admin && (
                             <div className="animate-in dashboard-home">
                                 <div className="dashboard-header" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
@@ -1284,17 +1283,6 @@ const Dashboard: React.FC = () => {
                             </div>
                         )}
 
-                        {activeTab === "Home" && !user?.is_admin && (
-                            <EditorialHome
-                                setActiveTab={(tab) => {
-                                    setActiveTab(tab);
-                                    setSidebarOpen(false);
-                                }}
-                                theme={theme}
-                                toggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                            />
-                        )}
-
                         {activeTab === "Scanner" && !user?.is_admin && (
                             <div className="animate-in dashboard-home" style={{ padding: '24px' }}>
                                 {renderScannerComponent()}
@@ -1315,8 +1303,8 @@ const Dashboard: React.FC = () => {
                         )}
                         {activeTab === "History" && <DetectionLog />}
                         {activeTab === "Admin" && <AdminConsole />}
-                        {activeTab === "Report" && !user?.is_admin && <ReportIssue onReturn={() => setActiveTab("Home")} />}
-                        {activeTab === "MyReports" && !user?.is_admin && <ReportIssue initialView="myreports" onReturn={() => setActiveTab("Home")} />}
+                        {activeTab === "Report" && !user?.is_admin && <ReportIssue onReturn={() => setActiveTab("Report")} />}
+                        {activeTab === "MyReports" && !user?.is_admin && <ReportIssue initialView="myreports" onReturn={() => setActiveTab("Report")} />}
                         {activeTab === "Configuration" && (
                             <AiConfig
                                 theme={theme}
