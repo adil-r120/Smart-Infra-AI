@@ -32,9 +32,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             { id: "Map", label: "Map", Icon: MapIcon },
         ] : []),
         ...(!user?.is_admin ? [
-            { id: "Report", label: "Report & Track", Icon: FileText },
-            { id: "Scanner", label: "Upload Issues", Icon: Scan },
             { id: "Webcam", label: "Live Feed", Icon: Camera },
+            { id: "Scanner", label: "Upload Issues", Icon: Scan },
+            { id: "Report", label: "Report & Track", Icon: FileText },
             { id: "Emergency", label: "Road Emergency", Icon: LifeBuoy },
         ] : []),
         { id: "Configuration", label: "Settings", Icon: Settings },
