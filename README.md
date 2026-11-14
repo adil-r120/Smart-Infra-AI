@@ -101,8 +101,8 @@ graph TD
 The entire full-stack system—including MySQL 8, the FastAPI AI backend with CPU PyTorch, and the React frontend served by Nginx—launches with a single command or one-click launcher.
 
 ### Option A: One-Click Windows Launchers
-- **Start All Services**: Double-click [`scripts/start_docker.bat`](file:///c:/Users/mdadi/OneDrive/Desktop/Smart-Infra/scripts/start_docker.bat) *(automatically starts Docker Desktop in the background and runs containers)*.
-- **Stop All Services**: Double-click [`scripts/stop_docker.bat`](file:///c:/Users/mdadi/OneDrive/Desktop/Smart-Infra/scripts/stop_docker.bat).
+- **Start All Services**: Double-click `scripts/start_docker.bat` *(automatically starts Docker Desktop in the background and runs containers)*.
+- **Stop All Services**: Double-click `scripts/stop_docker.bat`.
 
 ### Option B: Terminal Command
 ```powershell
