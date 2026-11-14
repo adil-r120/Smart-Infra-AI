@@ -4,12 +4,24 @@ import {
     Camera, MapPin, Send, CheckCircle, Navigation, Info, Upload, 
     X, AlertCircle, Loader, Calendar, Video, Download, ClipboardList, 
     Plus, Activity, Sparkles, ShieldCheck, Cpu, ArrowRight, CheckCheck,
-    FileText, Clock, Wrench, RefreshCw, Layers
+    FileText, Clock, Wrench, RefreshCw, Layers, Mic, MicOff, Languages, Radio
 } from "lucide-react";
 import { API_BASE } from "../api/config";
 import { useAuth } from "../context/AuthContext";
 import MyReports from "../components/MyReports";
 import "./ReportIssue.css";
+
+const VOICE_LANGUAGES = [
+    { code: "en-IN", label: "English (India)", flag: "🇮🇳" },
+    { code: "en-US", label: "English (US)", flag: "🇺🇸" },
+    { code: "hi-IN", label: "हिन्दी (Hindi)", flag: "🇮🇳" },
+    { code: "mr-IN", label: "मराठी (Marathi)", flag: "🇮🇳" },
+    { code: "ta-IN", label: "தமிழ் (Tamil)", flag: "🇮🇳" },
+    { code: "te-IN", label: "తెలుగు (Telugu)", flag: "🇮🇳" },
+    { code: "kn-IN", label: "ಕನ್ನಡ (Kannada)", flag: "🇮🇳" },
+    { code: "bn-IN", label: "বাংলা (Bengali)", flag: "🇮🇳" },
+    { code: "es-ES", label: "Español (Spanish)", flag: "🇪🇸" },
+];
 
 const CATEGORIES = [
     { id: "pothole", label: "Pothole", icon: "🕳️" },
@@ -61,6 +73,169 @@ const ReportIssue: React.FC<ReportIssueProps> = ({ onReturn, initialView = "form
     const [dragActive, setDragActive] = useState(false);
     const [webcamActive, setWebcamActive] = useState(false);
     const [ticketId, setTicketId] = useState<string | null>(null);
+
+    // ── Voice Dictation & Multilingual AI Parsing States ─────────────
+    const [isListening, setIsListening] = useState(false);
+    const [voiceLang, setVoiceLang] = useState(() => localStorage.getItem("si_voice_lang") || "en-IN");
+    const [interimText, setInterimText] = useState("");
+    const [voiceFeedback, setVoiceFeedback] = useState<string | null>(null);
+    const recognitionRef = useRef<any>(null);
+
+    const parseVoiceTranscript = (text: string) => {
+        const lower = text.toLowerCase();
+
+        // 1. Category extraction
+        let matchedCat: string | null = null;
+        if (lower.includes("pothole") || lower.includes("crater") || lower.includes("gaddha") || lower.includes("hole") || lower.includes("cavity")) {
+            matchedCat = "pothole";
+        } else if (lower.includes("streetlight") || lower.includes("street light") || lower.includes("lamp") || lower.includes("andhera") || (lower.includes("light") && lower.includes("broken"))) {
+            matchedCat = "broken_streetlight";
+        } else if (lower.includes("tree") || lower.includes("branch") || lower.includes("trunk") || lower.includes("ped")) {
+            matchedCat = "fallen_tree";
+        } else if (lower.includes("flood") || lower.includes("water") || lower.includes("leak") || lower.includes("drain") || lower.includes("paani") || lower.includes("sewage")) {
+            matchedCat = "flooding";
+        } else if (lower.includes("signal") || lower.includes("traffic light") || lower.includes("red light")) {
+            matchedCat = "traffic_signal";
+        } else if (lower.includes("garbage") || lower.includes("trash") || lower.includes("waste") || lower.includes("kachra") || lower.includes("dump") || lower.includes("debris")) {
+            matchedCat = "garbage_dump";
+        } else if (lower.includes("crack") || lower.includes("fissure") || lower.includes("damage") || lower.includes("asphalt") || lower.includes("rough")) {
+            matchedCat = "road_damage";
+        }
+
+        // 2. Location hints extraction (e.g. "near X", "at X", "on X", "opposite X")
+        const locMatch = text.match(/\b(?:near|at|on|opposite|in front of|around|beside|across from)\s+([A-Za-z0-9\s,.-]+?)(?:\.|$|,|\b(?:and|with|there|it)\b)/i);
+        let extractedLoc: string | null = null;
+        if (locMatch && locMatch[1] && locMatch[1].trim().length > 3) {
+            extractedLoc = locMatch[1].trim();
+        }
+
+        return { matchedCat, extractedLoc };
+    };
+
+    const stopVoiceListening = () => {
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch {
+                // ignore
+            }
+        }
+        setIsListening(false);
+        setInterimText("");
+    };
+
+    const toggleVoiceListening = () => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Voice Dictation is supported in Google Chrome, Microsoft Edge, and Safari on desktop and mobile.");
+            return;
+        }
+
+        if (isListening) {
+            stopVoiceListening();
+            return;
+        }
+
+        try {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = voiceLang;
+
+            recognition.onstart = () => {
+                setIsListening(true);
+                setInterimText("");
+            };
+
+            recognition.onresult = (event: any) => {
+                let currentInterim = "";
+                let finalTranscript = "";
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        currentInterim += transcript;
+                    }
+                }
+
+                if (currentInterim) {
+                    setInterimText(currentInterim);
+                }
+
+                if (finalTranscript) {
+                    const trimmed = finalTranscript.trim();
+                    setDescription(prev => {
+                        const cleanPrev = prev.trim();
+                        if (!cleanPrev) return trimmed;
+                        return `${cleanPrev} ${trimmed}`;
+                    });
+                    setInterimText("");
+
+                    // Smart extraction
+                    const { matchedCat, extractedLoc } = parseVoiceTranscript(trimmed);
+                    const feedbackItems: string[] = [];
+
+                    if (matchedCat && !selectedCategory) {
+                        setSelectedCategory(matchedCat);
+                        const catLabel = CATEGORIES.find(c => c.id === matchedCat)?.label;
+                        feedbackItems.push(`Auto-categorized: ${catLabel}`);
+                    }
+
+                    if (extractedLoc && !location) {
+                        setLocation(extractedLoc);
+                        feedbackItems.push(`Auto-filled Location: "${extractedLoc}"`);
+                    }
+
+                    if (feedbackItems.length > 0) {
+                        setVoiceFeedback(feedbackItems.join(" • "));
+                        setTimeout(() => setVoiceFeedback(null), 5000);
+                    }
+                }
+            };
+
+            recognition.onerror = (event: any) => {
+                console.warn("[Voice] Speech recognition error:", event.error);
+                if (event.error === "not-allowed") {
+                    setErrors(prev => ({ ...prev, description: "Microphone access denied. Please allow microphone permissions in your browser." }));
+                }
+                stopVoiceListening();
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+                setInterimText("");
+            };
+
+            recognitionRef.current = recognition;
+            recognition.start();
+        } catch (err) {
+            console.error("[Voice] Initialization failed:", err);
+            setIsListening(false);
+        }
+    };
+
+    const handleVoiceLanguageChange = (newLang: string) => {
+        setVoiceLang(newLang);
+        localStorage.setItem("si_voice_lang", newLang);
+        if (isListening) {
+            stopVoiceListening();
+            setTimeout(() => {
+                toggleVoiceListening();
+            }, 200);
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.abort();
+                } catch {}
+            }
+        };
+    }, []);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -265,6 +440,9 @@ const ReportIssue: React.FC<ReportIssueProps> = ({ onReturn, initialView = "form
         setSelectedCategory(null);
         setDescription("");
         setErrors({});
+        stopVoiceListening();
+        setInterimText("");
+        setVoiceFeedback(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -649,7 +827,7 @@ const ReportIssue: React.FC<ReportIssueProps> = ({ onReturn, initialView = "form
                             )}
                         </div>
 
-                        {/* Description Textarea */}
+                        {/* Description Textarea with Voice Dictation */}
                         <div className="report-field-group">
                             <div className="report-field-header">
                                 <label className="report-field-label">
@@ -665,8 +843,82 @@ const ReportIssue: React.FC<ReportIssueProps> = ({ onReturn, initialView = "form
                                     )}
                                 </span>
                             </div>
+
+                            {/* Voice Dictation & Multilingual AI Toolbar */}
+                            <div className={`report-voice-panel ${isListening ? 'listening' : ''}`}>
+                                <div className="report-voice-main">
+                                    <button
+                                        type="button"
+                                        className={`report-voice-mic-btn ${isListening ? 'listening' : ''}`}
+                                        onClick={toggleVoiceListening}
+                                        title={isListening ? "Stop Voice Dictation" : "Start Voice Dictation"}
+                                    >
+                                        {isListening ? (
+                                            <>
+                                                <MicOff size={15} />
+                                                <span className="report-voice-waves">
+                                                    <span className="voice-wave-bar bar1" />
+                                                    <span className="voice-wave-bar bar2" />
+                                                    <span className="voice-wave-bar bar3" />
+                                                </span>
+                                                <span>Stop Listening</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Mic size={15} />
+                                                <span>🎙️ Voice Dictation</span>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* Language Selector */}
+                                    <div className="report-voice-lang-wrap">
+                                        <Languages size={13} className="report-voice-lang-icon" />
+                                        <select
+                                            value={voiceLang}
+                                            onChange={(e) => handleVoiceLanguageChange(e.target.value)}
+                                            className="report-voice-lang-select"
+                                            title="Speech Recognition Language"
+                                        >
+                                            {VOICE_LANGUAGES.map(lang => (
+                                                <option key={lang.code} value={lang.code}>
+                                                    {lang.flag} {lang.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {description && (
+                                        <button
+                                            type="button"
+                                            className="report-voice-clear-btn"
+                                            onClick={() => setDescription("")}
+                                            title="Clear Observation Text"
+                                        >
+                                            Clear Text
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Live interim transcript feedback */}
+                                {isListening && interimText && (
+                                    <div className="report-voice-live-text animate-pulse">
+                                        <Radio size={12} className="report-voice-live-dot" />
+                                        <span>"{interimText}"</span>
+                                    </div>
+                                )}
+
+                                {/* AI extraction feedback badge */}
+                                {voiceFeedback && (
+                                    <div className="report-voice-ai-feedback animate-in">
+                                        <Sparkles size={13} />
+                                        <span>{voiceFeedback}</span>
+                                    </div>
+                                )}
+                            </div>
+
                             <textarea
-                                placeholder="Describe condition, traffic impact, and surrounding landmarks..."
+                                placeholder="Describe condition, traffic impact, and surrounding landmarks... or click '🎙️ Voice Dictation' to speak."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 className={`report-textarea ${errors.description ? 'input-error' : ''}`}
