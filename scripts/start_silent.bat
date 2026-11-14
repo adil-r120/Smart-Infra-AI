@@ -3,10 +3,10 @@ setlocal
 
 echo --- Smart-Infra Persistence Engine ---
 
-:: 1. Force kill any existing processes on ports 8000 (Backend) and 3000 (Frontend)
-echo [*] Cleaning ghost processes on ports 8000 and 3000...
+:: 1. Force kill any existing processes on ports 8000 (Backend) and frontend ports (3000, 5173-5177)
+echo [*] Cleaning ghost processes on ports 8000, 3000, and 5173-5177...
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8000') do taskkill /f /t /pid %%a >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000') do taskkill /f /t /pid %%a >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr /r ":3000 :5173 :5174 :5175 :5176 :5177"') do taskkill /f /t /pid %%a >nul 2>&1
 
 :: 2. Start Backend
 echo [*] Launching Neural Backend (8000)...
