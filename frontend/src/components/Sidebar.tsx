@@ -1,7 +1,7 @@
 import React from "react";
 import {
     Calendar, Settings, Map as MapIcon, ShieldAlert,
-    FileText, Camera, LogOut, Scan, LayoutDashboard, PanelLeftClose, PanelLeftOpen
+    FileText, Camera, LogOut, Scan, LayoutDashboard, PanelLeftClose, PanelLeftOpen, LifeBuoy
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -35,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             { id: "Report", label: "Report & Track", Icon: FileText },
             { id: "Scanner", label: "Upload Issues", Icon: Scan },
             { id: "Webcam", label: "Live Feed", Icon: Camera },
+            { id: "Emergency", label: "Road Emergency", Icon: LifeBuoy },
         ] : []),
         { id: "Configuration", label: "Settings", Icon: Settings },
     ];

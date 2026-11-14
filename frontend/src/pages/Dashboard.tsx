@@ -15,6 +15,7 @@ import ReportIssue from "./ReportIssue";
 import IntelligenceHub from "../components/IntelligenceHub";
 import MyReports from "../components/MyReports";
 import UrbanAdvisorChat from "../components/UrbanAdvisorChat";
+import RoadEmergency from "../components/RoadEmergency";
 import { Detection, DetectionResult, DBEntry, Stats } from "../types";
 import { AlertTriangle, X, Activity, Camera, Database, Sun, Moon, RefreshCw, ShieldAlert, Scan, Download, Eye, Crosshair, Radio, Zap, Maximize, Minimize, Trash2, WifiOff, Shield, Bell, Video, Play, Pause, Layers, Menu, Check, Upload, Settings, User as UserIcon, PanelLeftClose, PanelLeftOpen, ChevronUp, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -78,14 +79,14 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState(() => {
         const saved = localStorage.getItem("si_active_tab");
-        const validTabs = ["Dashboard", "Scanner", "Map", "History", "Admin", "Report", "MyReports", "Configuration", "Webcam"];
+        const validTabs = ["Dashboard", "Scanner", "Map", "History", "Admin", "Report", "MyReports", "Configuration", "Webcam", "Emergency"];
         if (saved && validTabs.includes(saved)) {
             // Non-admin cannot access admin-only tabs
             if (!user?.is_admin && (saved === "Dashboard" || saved === "Admin" || saved === "History" || saved === "Map")) {
                 return "Report";
             }
-            // Admin cannot access user-only tabs (Scanner, Webcam, Report, MyReports)
-            if (user?.is_admin && (saved === "Scanner" || saved === "Webcam" || saved === "Report" || saved === "MyReports")) {
+            // Admin cannot access user-only tabs (Scanner, Webcam, Report, MyReports, Emergency)
+            if (user?.is_admin && (saved === "Scanner" || saved === "Webcam" || saved === "Report" || saved === "MyReports" || saved === "Emergency")) {
                 return "Dashboard";
             }
             return saved;
@@ -96,7 +97,7 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         if (!user?.is_admin && (activeTab === "Dashboard" || activeTab === "Admin" || activeTab === "History" || activeTab === "Map")) {
             setActiveTab("Report");
-        } else if (user?.is_admin && (activeTab === "Scanner" || activeTab === "Webcam" || activeTab === "Report" || activeTab === "MyReports")) {
+        } else if (user?.is_admin && (activeTab === "Scanner" || activeTab === "Webcam" || activeTab === "Report" || activeTab === "MyReports" || activeTab === "Emergency")) {
             setActiveTab("Dashboard");
         } else {
             localStorage.setItem("si_active_tab", activeTab);
@@ -1305,6 +1306,7 @@ const Dashboard: React.FC = () => {
                         {activeTab === "Admin" && <AdminConsole />}
                         {activeTab === "Report" && !user?.is_admin && <ReportIssue onReturn={() => setActiveTab("Report")} />}
                         {activeTab === "MyReports" && !user?.is_admin && <ReportIssue initialView="myreports" onReturn={() => setActiveTab("Report")} />}
+                        {activeTab === "Emergency" && !user?.is_admin && <RoadEmergency onNavigateToReport={() => setActiveTab("Report")} />}
                         {activeTab === "Configuration" && (
                             <AiConfig
                                 theme={theme}
