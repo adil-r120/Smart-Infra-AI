@@ -167,9 +167,49 @@ const Dashboard: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const bgVideoRef = useRef<HTMLVideoElement>(null);
+    const [bgVideoLoaded, setBgVideoLoaded] = useState(false);
     const ipCamImgRef = useRef<HTMLImageElement>(null);
     const webcamStreamRef = useRef<MediaStream | null>(null);
     const webcamCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    // Background video autoplay assurance with fallback for browser policies (User Mode & Dark Theme Only)
+    useEffect(() => {
+        if (user?.is_admin || theme !== "dark") return;
+        const video = bgVideoRef.current;
+        if (!video) return;
+
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playbackRate = 0.88; // Smooth cinematic glide
+
+        const playVideo = () => {
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => setBgVideoLoaded(true))
+                    .catch((err) => {
+                        console.warn("Background video autoplay was deferred by browser policy:", err);
+                    });
+            }
+        };
+
+        playVideo();
+
+        const handleFirstInteraction = () => {
+            if (video && video.paused) {
+                video.play().then(() => setBgVideoLoaded(true)).catch(() => {});
+            }
+        };
+
+        window.addEventListener("click", handleFirstInteraction, { once: true });
+        window.addEventListener("touchstart", handleFirstInteraction, { once: true });
+
+        return () => {
+            window.removeEventListener("click", handleFirstInteraction);
+            window.removeEventListener("touchstart", handleFirstInteraction);
+        };
+    }, [user?.is_admin, theme]);
 
     const getAuthConfig = () => {
         const token = localStorage.getItem("si_token");
@@ -936,7 +976,25 @@ const Dashboard: React.FC = () => {
     );
 
     return (
-        <div className={`dashboard-root ${theme}-theme`}>
+        <div className={`dashboard-root ${theme}-theme ${user?.is_admin ? "admin-mode" : "user-mode"}`}>
+            {/* ── Fixed Full-Screen Background Video (Citizen / User Mode & Dark Theme Only) ── */}
+            {!user?.is_admin && theme === "dark" && (
+                <div className="dashboard-global-video-backdrop" aria-hidden="true">
+                    <video
+                        ref={bgVideoRef}
+                        className={`dashboard-global-video ${bgVideoLoaded ? "loaded" : ""}`}
+                        src="/AI_monitoring_system_scanning_city.mp4"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="auto"
+                        onLoadedData={() => setBgVideoLoaded(true)}
+                        onCanPlay={() => setBgVideoLoaded(true)}
+                    />
+                    <div className="dashboard-global-video-overlay" />
+                </div>
+            )}
 
             <header className="top-full-header" style={{ flexShrink: 0, zIndex: 999 }}>
                 <div className="header-left-group">

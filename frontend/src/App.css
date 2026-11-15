@@ -79,18 +79,50 @@
     color: #ffffff !important;
 }
 
-.dark-theme .top-full-header {
+.admin-mode.dark-theme .top-full-header {
     background: rgba(18, 18, 18, 0.95) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-.dark-theme .sidebar {
+.admin-mode.dark-theme .sidebar {
     background: #121212 !important;
     border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-.dark-theme .tab-content-wrapper {
+.admin-mode.dark-theme .tab-content-wrapper {
     background: #121212 !important;
+}
+
+.user-mode.dark-theme .top-full-header {
+    background: rgba(10, 15, 26, 0.82) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.user-mode.dark-theme .sidebar {
+    background: rgba(10, 14, 24, 0.82) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.user-mode.dark-theme .tab-content-wrapper {
+    background: transparent !important;
+}
+
+.light-theme .top-full-header {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.light-theme .sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.light-theme .tab-content-wrapper {
+    background: #f8fafc !important;
 }
 
 .dark-theme .stat-card,
